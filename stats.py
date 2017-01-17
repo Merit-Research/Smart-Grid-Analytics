@@ -1,6 +1,7 @@
 # Filename:     stats.py
-# Author(s):    apadin, dvorva, mjmor, mgkallit
+# Authors:      apadin, dvorva, mjmor, mgkallit
 # Start Date:   1/17/2017
+# Last Update:  1/17/2017
 
 
 """
