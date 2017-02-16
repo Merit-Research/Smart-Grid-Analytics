@@ -1,11 +1,13 @@
 # File extensions
 *.csv
 *.pyc
+*.log
+*.txt
 
 # Keywords
 *test*
+*temp*
 
 # Specific files
-
 
 # Specific folders
