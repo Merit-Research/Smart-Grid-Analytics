@@ -3,7 +3,6 @@
 # Start Date:   1/17/2017
 # Last Update:  1/17/2017
 
-
 """
 blr.py - Functions for training the Bayesian model
 
@@ -14,7 +13,6 @@ train - Accepts as input a training set X and labels y
 
 
 #==================== LIBRARIES ====================#
-
 import numpy as np
 import scipy as sp
 import scipy.stats

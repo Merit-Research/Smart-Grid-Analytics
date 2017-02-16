@@ -1,12 +1,9 @@
 #!/usr/bin/env python
+# Filename:     driverSeq.py
+# Authors:      apadin, based on work by dvorva, yabskbd, mjmor, and mgkallit
+# Start Date:   2017-01-10
 
-# Filename:         sequentialDriver.py
-# Contributors:     apadin, based on work by dvorva, yabskbd, mjmor, and mgkallit
-# Start Date:       2017-01-10
-
-"""
-
-Driver program for running the sequential BLR
+"""Driver program for running the sequential BLR
 
 This program is intended to replace all versions of 
 pi_seq_BLR* currently floating around. It was created
@@ -34,6 +31,7 @@ import time
 import argparse
 import numpy as np
 
+from common import *
 import settings
 import zway
 from datalog import Datalog
@@ -94,7 +92,7 @@ def main(argv):
     print "alpha: %.3f" % ema_alpha
 
     
-    algo = Algo(granularity, training_window, training_interval, num_features)
+    algo = Algo(num_features, training_window, training_interval)
     algo.setSeverityParameters(severity_omega, severity_lambda)
     algo.setEMAParameter(ema_alpha)
     
@@ -127,7 +125,7 @@ def main(argv):
         target, pred = algo.run(features)
         if (pred != None):
             anomaly = algo.checkSeverity(target, pred)
-            results_log.log([target, pred, anomaly])
+            results_log.log([target, pred, float(anomaly)])
             print target, pred, anomaly
             print "theta", algo.w_opt
         else:

@@ -14,7 +14,7 @@ model when necessary and runs the anomaly detection scheme.
 #==================== LIBRARIES ====================#
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
+from collections import deque
 
 import blr
 from stats import ewma
@@ -78,7 +78,7 @@ class Algo(object):
             #    self.data_queue.pop()
 
         # Train after every 'training_interval' number of samples
-        if (self.train_count == self.training_interval) and
+        if (self.train_count == self.training_interval) and \
            (len(self.samples) == training_window) :
             self.train()
             self.have_trained = True

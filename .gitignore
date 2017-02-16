@@ -1,6 +1,6 @@
 # File extensions
-.csv
-.pyc
+*.csv
+*.pyc
 
 # Keywords
 *test*

@@ -1,0 +1,9 @@
+{
+"granularity": 1,
+"training_window": 24,
+"training_interval": 1,
+"ema_alpha": 1.0,
+"severity_omega": 1.0,
+"severity_lambda": 3.719,
+"auto_regression": 1
+}
