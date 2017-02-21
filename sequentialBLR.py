@@ -12,13 +12,11 @@ public so that other viewers could better understand the
 analysis process. It also implements several improvements
 which would have been difficult to include in the 
 existing program. This includes:
- * Use of pandas for data manipulation and file I/O
  * Deques over lists or numpy arrays to hold the data
  * The Algo class to handle the BLR analysis
  * Use of json library to save and load settings
  * Simplification of argparse options
  * Better abstraction of data collection
- * Separation of training backups into separate module
 
 - Adrian Padin, 1/10/2017
 
@@ -41,12 +39,13 @@ from modules.algo import Algo
 #==================== FUNCTIONS ====================#
 
 def get_features(zserver, sound=False):
-    feature_list = []
+    features = []
     for key in zserver.device_IDs():
-        feature_list.append(zserver.get_data(key))
-    feature_list.append(np.random.rand())
-    return feature_list
+        features.append(zserver.get_data(key))
+    return features
     
+def get_power():
+    return np.random.normal()
     
 #==================== MAIN ====================#
 def main(argv):
@@ -66,7 +65,7 @@ def main(argv):
     # Initialize Zway server
     host = args.hostname
     zserver = zway.Server(host)
-
+    
     # Read settings from settings file
     try:
         settings_dict = settings.load(args.settings_file)
@@ -74,9 +73,7 @@ def main(argv):
         print "Error reading settings file.", error
         print " "
         exit(1)
-        
-    feature_list = zserver.device_IDs()
-
+    
     # Initialize Algo class
     granularity = int(settings_dict['granularity'])
     training_window = int(settings_dict['training_window'])
@@ -85,24 +82,26 @@ def main(argv):
     severity_omega = float(settings_dict['severity_omega'])
     severity_lambda = float(settings_dict['severity_lambda'])
     auto_regression = int(settings_dict['auto_regression'])
-    num_features = len(feature_list)
+    
+    feature_names = zserver.device_IDs()
+    num_features = len(feature_names)
     
     print "Num features: ", num_features
     print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
     print "alpha: %.3f" % ema_alpha
-
     
     algo = Algo(num_features, training_window, training_interval)
     algo.set_severity(severity_omega, severity_lambda)
     algo.set_EWMA(ema_alpha)
     
     # Two Datalogs: one for data and one for results
-    data_log = Datalog(prefix, feature_list)
-    results_header = ['power', 'prediction', 'anomaly']
+    feature_names.append('total_power')
+    data_log = Datalog(prefix, feature_names)
+    results_header = ['target', 'prediction', 'anomaly']
     results_log = Datalog(prefix + '_results', results_header)
     
     # Timing procedure
-    granularity = settings_dict['granularity'] * 60
+    granularity = settings_dict['granularity']
     granularity = 10
     goal_time = int(time.time())
     if args.time_allign:
@@ -117,13 +116,13 @@ def main(argv):
         goal_time = goal_time + granularity
         
         # Data collection
+        print "Recording sample at {}".format(goal_time)
         features = get_features(zserver)
         power = get_power()
-        sample = np.array(features)
-        data_log.log(features.tolist(), goal_time)
-        print "Sample recorded at {}".format(goal_time)
-        
-        # Data analysis and recording results
+        features.append(power)
+        data_log.log(features, goal_time)
+
+        features = np.array(features).flatten()
         target, pred, anomaly = algo.run(features)
         if (anomaly != None):
             results_log.log([target, pred, float(anomaly)])
