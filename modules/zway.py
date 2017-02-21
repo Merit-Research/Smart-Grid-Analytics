@@ -97,11 +97,9 @@ class Server(object):
         Fetch device information from the server and generate device dictionary.
         Used on startup, as well as when adding or removing devices.
         """
-
         self.devices = {}
         acceptedClasses = ['48', '49', '50']
         devices_page = self._make_request("Run/devices").json()
-
         for device_id_base in devices_page:
             device_count = 0
             instances = devices_page[device_id_base]['instances']

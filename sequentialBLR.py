@@ -40,13 +40,13 @@ from modules.algo import Algo
 
 #==================== FUNCTIONS ====================#
 
-def collect_features(zserver, sound=False):
+def get_features(zserver, sound=False):
     feature_list = []
     for key in zserver.device_IDs():
         feature_list.append(zserver.get_data(key))
     feature_list.append(np.random.rand())
-    return np.array(feature_list)
-
+    return feature_list
+    
     
 #==================== MAIN ====================#
 def main(argv):
@@ -117,7 +117,9 @@ def main(argv):
         goal_time = goal_time + granularity
         
         # Data collection
-        features = collect_features(zserver)
+        features = get_features(zserver)
+        power = get_power()
+        sample = np.array(features)
         data_log.log(features.tolist(), goal_time)
         print "Sample recorded at {}".format(goal_time)
         
