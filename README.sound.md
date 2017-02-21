@@ -1,7 +1,7 @@
 Notes and Setup of Audio Sensor for Raspberry Pi
 ==============
 
-The code for testing out the sound sensor can be found in (sound.py)[sound.py].
+The code for testing out the sound sensor can be found in [sound.py](sound.py).
 
 Setup
 --------------
