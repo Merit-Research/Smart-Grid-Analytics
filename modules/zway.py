@@ -63,7 +63,7 @@ class Server(object):
         Initialize connection to the network and obtain
         a list of available devices.
         """
-        self.timeout = 2.0
+        self.timeout = 5.0
         self.base_url = "http://{}:{}/ZWaveAPI/".format(host, port)
 
         # Check if authorization is needed

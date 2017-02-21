@@ -17,6 +17,8 @@ import time
 import datetime as dt
 import csv
 import io
+import argparse
+
 import zway
 
 
@@ -81,17 +83,25 @@ class Datalog(object):
         
 def main(argv):
     """Connect to server and start the logging process."""
-    host = argv[1]
-    port = argv[2]
-    prefix = argv[3]
+    
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('host', type=str)
+    parser.add_argument('port', type=str)
+    parser.add_argument('prefix', type=str)
+    parser.add_argument('-a', '--auth', nargs=2, type=str, default=(None, None))
+    args = parser.parse_args(argv[1:])
+    
     try:
-        server = zway.Server(host, port, username=argv[4], password=argv[5])
+        username, password = args.auth
     except Exception:
-        server = zway.Server(host, port)
+        server = zway.Server(args.host, args.port)
+    else:
+        server = zway.Server(args.host, args.port, username=username, password=password)
 
 
     device_list = server.device_IDs()
-    log = Datalog(prefix, device_list)
+    log = Datalog(args.prefix, device_list)
     
     # Timing procedure
     granularity = 10

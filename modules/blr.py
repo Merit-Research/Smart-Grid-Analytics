@@ -56,7 +56,57 @@ def train(X, y):
             print  "******************************************************************************************************"
             sys.exit(-1)
 
-        m_N = beta * np.dot(S_N, np.dot(np.transpose(Phi), t))
+        m_N = beta * np.dot(S_N, np.dot(Phi.T, t))
+        gamma = sum(beta*s[i]**2 /(alpha + beta*s[i]**2) for i in range(M))
+        #
+        # update alpha, beta
+        #
+        ab_old = np.array([alpha, beta])
+        alpha = gamma /np.inner(m_N,m_N)
+        one_over_beta = 1/(N-gamma) * sum( (t[n] - np.inner(m_N, Phi[n]))**2 for n in range(N))
+        beta = 1/one_over_beta
+        ab_new = np.array([alpha, beta])
+
+    S_N = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
+    m_N = beta * np.dot(S_N, np.dot(np.transpose(Phi), t))
+    w_opt = m_N
+
+    return (w_opt, alpha, beta, S_N)
+    
+    
+
+# See p.152 of Bishop's "Pattern Recognition and Machine Learning"
+def sklearn_train(X, y):
+
+    Phi = X # the measurement matrix of the input variables x (i.e., features)
+    t   = y # the vector of observations for the target variable
+    (N, M) = np.shape(Phi)
+    # Init values for  hyper-parameters alpha, beta
+    alpha = 5*10**(-3)
+    beta = 5
+    max_iter = 100
+    k = 0
+
+    PhiT_Phi = np.dot(np.transpose(Phi), Phi)
+    s = np.linalg.svd(PhiT_Phi, compute_uv=0) # Just get the vector of singular values s
+
+    ab_old = np.array([alpha, beta])
+    ab_new = np.zeros((1,2))
+    tolerance = 10**-3
+    while( k < max_iter and np.linalg.norm(ab_old-ab_new) > tolerance):
+        k += 1
+        try:
+
+            S_N = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
+        except np.linalg.LinAlgError as err:
+            print  "******************************************************************************************************"
+            print "                           ALERT: LinearAlgebra Error detected!"
+            print "      CHECK if your measurement matrix is not leading to a singular alpha*np.eye(M) + beta*PhiT_Phi"
+            print "                           GOODBYE and see you later. Exiting ..."
+            print  "******************************************************************************************************"
+            sys.exit(-1)
+
+        m_N = beta * np.dot(S_N, np.dot(Phi.T, t))
         gamma = sum(beta*s[i]**2 /(alpha + beta*s[i]**2) for i in range(M))
         #
         # update alpha, beta
@@ -86,38 +136,31 @@ class Severity(object):
         self.set_wL(w, L)
         self.ALERT_THRESH = alert_count
     
-    def update_params(beta, covariance):
+    def update_params(self, beta, covariance):
         self.beta = beta
         self.covariance = covariance
         
-    def set_wL(w, L):
+    def set_wL(self, w, L):
         self.w = w  # EWMA weight
         self.L = L  # Std dev limit
-        self.Z_THRESH = L * np.sqrt(w/(2-w))       
+        self.Z_THRESH = L * np.sqrt(w/(2-w))
 
     def check(self, error, x):
         mu = 0
         beta = self.beta
         S_N = self.covariance
         x = np.matrix(x).flatten()
-        
-        sigma = np.sqrt(1.0/beta + np.dot(x.T, np.dot(S_N, x)))
+        sigma = np.sqrt(1.0/beta + np.dot(x, np.dot(S_N, x.T)))
     
-        # Left-tailed
-        if error < mu:
+        if error < mu:  # Left-tailed
             p_value = sp.stats.norm.cdf(error, mu, sigma)
             zscore = sp.stats.norm.ppf(p_value) # inverse of cdf N(0,1)
-            
-        # Right-tailed
-        else:
+        else:   # Right-tailed
             p_value = 1 - sp.stats.norm.cdf(error, mu, sigma)
             zscore = sp.stats.norm.ppf(1 - p_value) # inverse of cdf N(0,1)
             
-        # Keep the zscore bounded
-        zscore = min(10, abs(zscore))
-
-        # Exponentially weighted moving average (EWMA)
-        self.avg_zscore = ewma(zscore, self.avg_zscore, self.w)
+        zscore = min(10, abs(zscore))   # Keep the zscore bounded
+        self.avg_zscore = ewma(zscore, self.avg_zscore, self.w)  # EWMA
         
         # Detect anomalies with alert counter
         # A single alert is raised if the Z score is over the threshold
@@ -127,7 +170,4 @@ class Severity(object):
             self.alert_count = 0
 
         # If several alerts are raised in succession, an anomly is reported
-        if (self.alert_count >= self.ALERT_THRESH):
-            return True
-        else:
-            return False
+        return True if (self.alert_count >= self.ALERT_THRESH) else False

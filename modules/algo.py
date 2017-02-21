@@ -18,6 +18,7 @@ from collections import deque
 
 import blr
 from stats import ewma
+from sklearn.linear_model import BayesianRidge
 
 
 #==================== CLASSES ====================#
@@ -29,7 +30,6 @@ class Algo(object):
         - 'training_window' is the number of previous data points to train on
         - 'training_interval' is the number of data points between training periods
         """
-
         self.num_features = num_features
         self.training_interval = training_interval
         self.training_window = training_window
@@ -37,68 +37,70 @@ class Algo(object):
         # Init sample matrix, a deque of feature vectors
         self.samples = deque(maxlen=training_window)
         self.targets = deque(maxlen=training_window)
-
+        
         self.severity = blr.Severity()
+        self.model = BayesianRidge()
         self.alpha = 1.0
         self.parameters = 0     # Training parameters
         self.train_count = 0
         self.have_trained = False
         self.pred_range = [0.0, np.inf]   # upper and lower bounds for predictions
 
-
     def run(self, sample):
         """Add a single sample to the data pool.
         The sample should be a feature vector: {x_1, x_2, x_3, ..., x_n, y}
         Where x_1->x_n are features and y is the target value
         """
-
-        # Error checking on 'sample'
-        assert(len(sample) == (self.num_features + 1))
+        assert(len(sample) == (self.num_features + 1))  # Input check
         sample = np.array(sample).flatten()
-
-        self.targets.append(sample[-1]) # Preserve the target value
-        sample[-1] = 1                  # Constant feature, aka bias
+        target = sample[-1]
+        prediction = None
+        anomaly = None
+        self.targets.append(target) # Preserve the target value
+        sample[-1] = 1              # Constant feature, aka bias
 
         # Add the sample to the sample queue
         if len(self.samples) > 0:
-            sample = ewma(sample, self.data_queue[-1], self.alpha)
+            sample = ewma(sample, self.samples[-1], self.alpha)
         self.samples.append(sample)
         self.train_count += 1
 
-        prediction = None
-        anomaly = None
-
         # Make a prediction (if we have already trained once)
         if self.have_trained:
-            prediction = sample * self.parameters   # Linear Regression model
+            prediction = float(self.model.predict(sample.reshape(1, -1)))
             prediction = max(prediction, self.pred_range[0])
             prediction = min(prediction, self.pred_range[1])
-            anomaly = self.severity.check(target - prediction, sample)
+            anomaly = float(self.severity.check(target - prediction, sample))
             #if anomaly:
             #    self.data_queue.pop()
 
         # Train after every 'training_interval' number of samples
-        if (self.train_count == self.training_interval) and \
-           (len(self.samples) == training_window) :
+        #print self.train_count, self.training_interval
+        #print len(self.samples), self.training_window
+        #raw_input('')
+        if (self.train_count >= self.training_interval) and \
+           (len(self.samples) >= self.training_window) :
             self.train()
             self.have_trained = True
             self.train_count = 0
 
         return target, prediction, anomaly
 
-
     def train(self):
         """Train the prediction and anomaly detection models"""
         X = np.matrix(self.samples)
-        y = np.matrix(self.targets)
-        self.parameters, alpha, beta, covariance = blr.train(X, y)
-        severity.update_params(beta, covariance)
-
+        y = np.array(self.targets)
+        self.model.fit(X, y)
+        beta = self.model.alpha_    # model.alpha_ is the noise precision ('beta' in Bishop)
+        alpha = self.model.lambda_  # model.lambda_ is the weights precision ('alpha' in Bishop)
+        PhiT_Phi = X.T * X
+        M = X.shape[1]
+        covariance = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
+        self.severity.update_params(beta, covariance)
 
     def set_severity(self, w, L):
         """Change the severity parameters"""
         self.severity.set_wL(w, L)
-
 
     def set_EWMA(self, alpha):
         """Change the EWMA (exponential weighted moving average) weight"""

@@ -73,7 +73,7 @@ def error_scores(targets, predictions, smoothing_win=120):
         targets_smoothed = moving_average(targets, smoothing_win)
         predictions_smoothed = moving_average(predictions, smoothing_win)
     except ValueError as e:
-        raise RuntimeError("Smoothing window cannot be larger than number of data points")
+        raise RuntimeError("Smoothing window ({}) cannot be larger than number of data points ({})".format(smoothing_win, T))
 
     # Prediction Mean Squared Error (smooth values)
     PMSE_smoothed = np.linalg.norm(targets_smoothed - predictions_smoothed)**2 / T

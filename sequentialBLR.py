@@ -31,11 +31,11 @@ import time
 import argparse
 import numpy as np
 
-from common import *
-import settings
-import zway
-from datalog import Datalog
-from algo import Algo
+from modules.common import *
+import modules.settings as settings
+import modules.zway as zway
+from modules.datalog import Datalog
+from modules.algo import Algo
 
 
 #==================== FUNCTIONS ====================#
@@ -93,8 +93,8 @@ def main(argv):
 
     
     algo = Algo(num_features, training_window, training_interval)
-    algo.setSeverityParameters(severity_omega, severity_lambda)
-    algo.setEMAParameter(ema_alpha)
+    algo.set_severity(severity_omega, severity_lambda)
+    algo.set_EWMA(ema_alpha)
     
     # Two Datalogs: one for data and one for results
     data_log = Datalog(prefix, feature_list)
@@ -122,16 +122,14 @@ def main(argv):
         print "Sample recorded at {}".format(goal_time)
         
         # Data analysis and recording results
-        target, pred = algo.run(features)
-        if (pred != None):
-            anomaly = algo.checkSeverity(target, pred)
+        target, pred, anomaly = algo.run(features)
+        if (anomaly != None):
             results_log.log([target, pred, float(anomaly)])
             print target, pred, anomaly
             print "theta", algo.w_opt
         else:
-            print target, predwui
+            print target, pred
 
-        
     # Clean-up if necessary
 
         
