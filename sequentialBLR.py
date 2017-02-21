@@ -131,6 +131,7 @@ def main(argv):
             print target, pred
 
     # Clean-up if necessary
+    print "Ending analysis"
 
         
 #==================== DRIVER ====================#
