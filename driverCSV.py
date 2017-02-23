@@ -1,4 +1,4 @@
-#!/usr/bin/python -O
+#!/usr/bin/env python
 # Driver for testing various prediction systems
 # Filename:     driverCSV.py
 # Author(s):    apadin
@@ -12,13 +12,14 @@ import time
 import datetime as dt
 import numpy as np
 import csv
+import argparse
 
 import matplotlib.pyplot as plt
 
-from common import *
-from algo import Algo
-from stats import f1_scores, error_scores
-
+from modules.common import *
+from modules.algo import Algo
+from modules.stats import f1_scores, error_scores
+import modules.settings as settings
 
 #==================== FUNCTIONS ====================#
 
@@ -44,12 +45,16 @@ def main(argv):
 
     #np.seterr(all='print')
 
-    try:
-        infile = argv[1]
-        outfile = argv[2]
-    except Exception:
-        raise RuntimeError("usage: python " + argv[0] + " <infile> <outfile>")
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('infile', type=str, help="name of input CSV file")
+    parser.add_argument('outfile', type=str, help="name of output CSV file")
+    parser.add_argument('-f', '--settings_file', type=str, help="load analysis settings from file")
+    args = parser.parse_args(argv[1:])
 
+    infile = args.infile
+    outfile = args.outfile
+    
     print ("Starting analysis on %s..." % infile)
     print ("Results will be recorded in %s..." % outfile)
     
@@ -63,27 +68,41 @@ def main(argv):
     # Output lists
     results = [['timestamp', 'target', 'prediction', 'anomaly']]
 
-    # Parameters
-    num_features = data_array.shape[1] - 2 #subtract 2 for timestamp and target
-    training_window = 24
-    training_interval = 1
+    # Use default settings or read settings from settings file
+    if (args.settings_file == None):
+        settings_dict = {
+            "granularity": 10,
+            "training_window": 120,
+            "training_interval": 60,
+            "ema_alpha": 1.0,
+            "severity_omega": 1.0,
+            "severity_lambda": 3.719,
+            "auto_regression": 0.0
+        }
+    else:
+        try:
+            settings_dict = settings.load(args.settings_file)
+        except Exception as error:
+            print "Error reading settings file.", error
+            print " "
+            exit(1)
+
+    # Initialize Algo class
+    training_window = int(settings_dict['training_window'])
+    training_interval = int(settings_dict['training_interval'])
+    ema_alpha = float(settings_dict['ema_alpha'])
+    severity_omega = float(settings_dict['severity_omega'])
+    severity_lambda = float(settings_dict['severity_lambda'])
+    auto_regression = int(settings_dict['auto_regression'])
     
-    algo = Algo(num_features, training_window*60, training_interval*60)
-        
-    # EWMA additions
-    # alpha is adjustable on a scale of (0, 1]
-    # The smaller value of alpha, the more averaging takes place
-    # A value of 1.0 means no averaging happens
-    #alpha = float(raw_input('Enter Value of alpha:'))
-    #algo.set_EWMA(alpha=1.0)
-    #algo.set_EWMA(alpha=0.73)
-    algo.set_EWMA(alpha=1.0)
-    
-    #Recomended Severity Parameters from Paper
-    #algo.set_severity(w=0.53, L=3.714) # Most sensitive
-    algo.set_severity(w=0.84, L=3.719) # Medium sensitive
-    #algo.set_severity(w=1.00, L=3.719) # Least sensitive 
-    #algo.set_severity(1, 2) # Custom senstivity
+    num_features = data_array.shape[1] - 2
+    print "Num features: ", num_features
+    print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
+    print "alpha: %.3f" % ema_alpha
+
+    algo = Algo(num_features, training_window, training_interval)
+    algo.set_severity(severity_omega, severity_lambda)
+    algo.set_EWMA(ema_alpha)
     
     # Used for F1 calculation
     detected = set()
@@ -96,7 +115,7 @@ def main(argv):
 
         # Get the next row of data
         cur_time = int(row[0])
-        if (count % 240) == 0:
+        if (count % 120 == 0):
             print "Trying time %s" % \
                 dt.datetime.fromtimestamp(cur_time).strftime(DATE_FORMAT)
 
@@ -104,7 +123,7 @@ def main(argv):
         new_data = np.around(new_data, decimals=2)
         target, prediction, anomaly = algo.run(new_data) # Magic!
         
-        if prediction != None:
+        if (prediction != None):
             results.append([cur_time, target, float(prediction), float(anomaly)])
             if anomaly:
                 detected.add(count)

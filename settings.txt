@@ -1,6 +1,6 @@
 {
-"granularity": 10,
-"training_window": 120,
+"granularity": 60,
+"training_window": 1440,
 "training_interval": 60,
 "ema_alpha": 1.0,
 "severity_omega": 1.0,

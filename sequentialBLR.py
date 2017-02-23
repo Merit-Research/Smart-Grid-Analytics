@@ -51,14 +51,14 @@ def get_power():
 def main(argv):
     
     #===== Initialization =====#
-    prefix = 'pi_seq_test'
+    prefix = 'isgada'
     
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('hostname', type=str, help="IP address or hostname of Z-way server host")
     parser.add_argument('-s', '--sound', action='store_true', help="use sound as a feature in analysis")
     parser.add_argument('-f', '--settings_file', type=str, help="load analysis settings from file")
-    parser.add_argument('-b', '--backup', action='store_true', help="start training on backup data")
+    #parser.add_argument('-b', '--backup', action='store_true', help="start training on backup data")
     parser.add_argument('-t', '--time_allign', action='store_true', help="collect data only at times which are multiples of the granularity")
     parser.add_argument('-o', '--collect_only', action='store_true', help="collect data but do not run analysis")
     args = parser.parse_args(argv[1:])

@@ -16,6 +16,7 @@ train - Accepts as input a training set X and labels y
 import numpy as np
 import scipy as sp
 import scipy.stats
+from sklearn.linear_model import BayesianRidge
 
 from stats import ewma
 
@@ -56,19 +57,19 @@ def train(X, y):
             print  "******************************************************************************************************"
             sys.exit(-1)
 
-        m_N = beta * np.dot(S_N, np.dot(Phi.T, t))
+        m_N = beta * np.dot(S_N, np.dot(t, Phi).T).T
         gamma = sum(beta*s[i]**2 /(alpha + beta*s[i]**2) for i in range(M))
         #
         # update alpha, beta
         #
         ab_old = np.array([alpha, beta])
-        alpha = gamma /np.inner(m_N,m_N)
+        alpha = float(gamma /np.inner(m_N,m_N))
         one_over_beta = 1/(N-gamma) * sum( (t[n] - np.inner(m_N, Phi[n]))**2 for n in range(N))
-        beta = 1/one_over_beta
+        beta = float(1/one_over_beta)
         ab_new = np.array([alpha, beta])
 
-    S_N = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
-    m_N = beta * np.dot(S_N, np.dot(np.transpose(Phi), t))
+    S_N = np.linalg.pinv(alpha*np.eye(M) + float(beta)*PhiT_Phi)
+    m_N = beta * np.dot(S_N, np.dot(t, Phi).T)
     w_opt = m_N
 
     return (w_opt, alpha, beta, S_N)
@@ -77,48 +78,14 @@ def train(X, y):
 
 # See p.152 of Bishop's "Pattern Recognition and Machine Learning"
 def sklearn_train(X, y):
-
-    Phi = X # the measurement matrix of the input variables x (i.e., features)
-    t   = y # the vector of observations for the target variable
-    (N, M) = np.shape(Phi)
-    # Init values for  hyper-parameters alpha, beta
-    alpha = 5*10**(-3)
-    beta = 5
-    max_iter = 100
-    k = 0
-
-    PhiT_Phi = np.dot(np.transpose(Phi), Phi)
-    s = np.linalg.svd(PhiT_Phi, compute_uv=0) # Just get the vector of singular values s
-
-    ab_old = np.array([alpha, beta])
-    ab_new = np.zeros((1,2))
-    tolerance = 10**-3
-    while( k < max_iter and np.linalg.norm(ab_old-ab_new) > tolerance):
-        k += 1
-        try:
-
-            S_N = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
-        except np.linalg.LinAlgError as err:
-            print  "******************************************************************************************************"
-            print "                           ALERT: LinearAlgebra Error detected!"
-            print "      CHECK if your measurement matrix is not leading to a singular alpha*np.eye(M) + beta*PhiT_Phi"
-            print "                           GOODBYE and see you later. Exiting ..."
-            print  "******************************************************************************************************"
-            sys.exit(-1)
-
-        m_N = beta * np.dot(S_N, np.dot(Phi.T, t))
-        gamma = sum(beta*s[i]**2 /(alpha + beta*s[i]**2) for i in range(M))
-        #
-        # update alpha, beta
-        #
-        ab_old = np.array([alpha, beta])
-        alpha = gamma /np.inner(m_N,m_N)
-        one_over_beta = 1/(N-gamma) * sum( (t[n] - np.inner(m_N, Phi[n]))**2 for n in range(N))
-        beta = 1/one_over_beta
-        ab_new = np.array([alpha, beta])
-
+    model = BayesianRidge().fit(X, y)
+    beta = model.alpha_     # model.alpha_ is the noise precision ('beta' in Bishop)
+    alpha = model.lambda_   # model.lambda_ is the weights precision ('alpha' in Bishop)
+    
+    PhiT_Phi = X.T * X
+    M = X.shape[1]
     S_N = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
-    m_N = beta * np.dot(S_N, np.dot(np.transpose(Phi), t))
+    m_N = beta * np.dot(S_N, np.dot(y, X).T)
     w_opt = m_N
 
     return (w_opt, alpha, beta, S_N)

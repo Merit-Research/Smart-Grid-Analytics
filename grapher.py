@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Filename:         grapher2.py
 # Contributors:     apadin
 # Start Date:       2016-06-24
@@ -36,8 +35,8 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import LinearLocator
 from matplotlib.figure import Figure
 
-from common import *
-from stats import moving_average
+from modules.common import *
+from modules.stats import moving_average
 
 
 #==================== GUI CLASSES ====================#

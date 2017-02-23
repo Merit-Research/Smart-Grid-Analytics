@@ -18,7 +18,6 @@ from collections import deque
 
 import blr
 from stats import ewma
-#from sklearn.linear_model import BayesianRidge
 
 
 #==================== CLASSES ====================#
@@ -70,7 +69,7 @@ class Algo(object):
 
         # Make a prediction (if we have already trained once)
         if self.have_trained:
-            prediction = np.dot(self.parameters, sample)
+            prediction = float(np.dot(self.parameters, sample))
             prediction = np.clip(prediction, self.pred_range[0], self.pred_range[1])
             anomaly = float(self.severity.check(target - prediction, sample))
             #if anomaly:
@@ -91,14 +90,13 @@ class Algo(object):
     def train(self):
         """Train the prediction and anomaly detection models"""
         X = np.matrix(self.samples)
-        y = np.array(self.targets)
-        self.model.fit(X, y)
-        beta = self.model.alpha_    # model.alpha_ is the noise precision ('beta' in Bishop)
-        alpha = self.model.lambda_  # model.lambda_ is the weights precision ('alpha' in Bishop)
-        PhiT_Phi = X.T * X
-        M = X.shape[1]
-        covariance = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
-        self.severity.update_params(beta, covariance)
+        y = np.array(self.targets).flatten()
+        w_opt, alpha, beta, S_N = blr.sklearn_train(X, y)
+        #w_opt, alpha, beta, S_N = blr.train(X, y)
+        self.parameters = w_opt.flatten()
+        
+        #covariance = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
+        self.severity.update_params(beta, S_N)
 
     def set_severity(self, w, L):
         """Change the severity parameters"""

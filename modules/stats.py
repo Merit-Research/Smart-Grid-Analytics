@@ -57,7 +57,7 @@ def moving_average(interval, window_size):
     return np.convolve(interval, window, 'same')
     
 
-def error_scores(targets, predictions, smoothing_win=120):
+def error_scores(targets, predictions, smoothing_win=None):
     """
     Calculates the various error values
     - targets: target values
@@ -69,6 +69,8 @@ def error_scores(targets, predictions, smoothing_win=120):
     predictions = np.array(predictions).flatten()
     assert(len(targets) == len(predictions))
 
+    if (smoothing_win == None):
+        smoothing_win = len(targets)
     try:
         targets_smoothed = moving_average(targets, smoothing_win)
         predictions_smoothed = moving_average(predictions, smoothing_win)
