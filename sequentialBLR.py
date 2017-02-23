@@ -12,13 +12,11 @@ public so that other viewers could better understand the
 analysis process. It also implements several improvements
 which would have been difficult to include in the 
 existing program. This includes:
- * Use of pandas for data manipulation and file I/O
  * Deques over lists or numpy arrays to hold the data
  * The Algo class to handle the BLR analysis
  * Use of json library to save and load settings
  * Simplification of argparse options
  * Better abstraction of data collection
- * Separation of training backups into separate module
 
 - Adrian Padin, 1/10/2017
 
@@ -41,12 +39,13 @@ from modules.algo import Algo
 #==================== FUNCTIONS ====================#
 
 def get_features(zserver, sound=False):
-    feature_list = []
+    features = []
     for key in zserver.device_IDs():
-        feature_list.append(zserver.get_data(key))
-    feature_list.append(np.random.rand())
-    return feature_list
+        features.append(zserver.get_data(key))
+    return features
     
+def get_power():
+    return np.random.normal()
     
 #==================== MAIN ====================#
 def main(argv):
@@ -56,11 +55,12 @@ def main(argv):
     
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('hostname', type=str)
+    parser.add_argument('hostname', type=str, help="IP address or hostname of Z-way server host")
     parser.add_argument('-s', '--sound', action='store_true', help="use sound as a feature in analysis")
-    parser.add_argument('-f', '--settings_file', type=str)
+    parser.add_argument('-f', '--settings_file', type=str, help="load analysis settings from file")
     parser.add_argument('-b', '--backup', action='store_true', help="start training on backup data")
-    parser.add_argument('-t', '--time_allign', action='store_true', help="collect data at times which are multiples of the granularity")
+    parser.add_argument('-t', '--time_allign', action='store_true', help="collect data only at times which are multiples of the granularity")
+    parser.add_argument('-o', '--collect_only', action='store_true', help="collect data but do not run analysis")
     args = parser.parse_args(argv[1:])
         
     # Initialize Zway server
@@ -85,8 +85,6 @@ def main(argv):
             print "Error reading settings file.", error
             print " "
             exit(1)
-        
-    feature_list = zserver.device_IDs()
 
     # Initialize Algo class
     granularity = int(settings_dict['granularity'])
@@ -96,7 +94,9 @@ def main(argv):
     severity_omega = float(settings_dict['severity_omega'])
     severity_lambda = float(settings_dict['severity_lambda'])
     auto_regression = int(settings_dict['auto_regression'])
-    num_features = len(feature_list)
+    
+    feature_names = zserver.device_IDs()
+    num_features = len(feature_names)
     
     print "Num features: ", num_features
     print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
@@ -107,12 +107,13 @@ def main(argv):
     algo.set_EWMA(ema_alpha)
     
     # Two Datalogs: one for data and one for results
-    data_log = Datalog(prefix, feature_list)
-    results_header = ['power', 'prediction', 'anomaly']
+    feature_names.append('total_power')
+    data_log = Datalog(prefix, feature_names)
+    results_header = ['target', 'prediction', 'anomaly']
     results_log = Datalog(prefix + '_results', results_header)
     
     # Timing procedure
-    granularity = settings_dict['granularity'] * 60
+    granularity = settings_dict['granularity']
     granularity = 10
     goal_time = int(time.time())
     if args.time_allign:
@@ -125,15 +126,18 @@ def main(argv):
         while goal_time > time.time():
             time.sleep(0.2)
         goal_time = goal_time + granularity
-        
+                
         # Data collection
+        print "Recording sample at {}".format(goal_time)
         features = get_features(zserver)
         power = get_power()
-        sample = np.array(features)
-        data_log.log(features.tolist(), goal_time)
-        print "Sample recorded at {}".format(goal_time)
-        
-        # Data analysis and recording results
+        features.append(power)
+        data_log.log(features, goal_time)
+
+        # Do not run analysis if only collecting data
+        if (args.collect_only): continue
+            
+        features = np.array(features).flatten()
         target, pred, anomaly = algo.run(features)
         if (anomaly != None):
             results_log.log([target, pred, float(anomaly)])

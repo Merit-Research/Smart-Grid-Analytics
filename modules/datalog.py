@@ -59,6 +59,7 @@ class Datalog(object):
         if (timestamp == None):
             timestamp = time.time()
         
+        sample = list(sample)
         date = dt.date.fromtimestamp(timestamp)
         fname = "{}_{}.csv".format(self.prefix, date)
 
