@@ -57,8 +57,8 @@ def main(argv):
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('hostname', type=str)
-    parser.add_argument('settings_file', type=str)
     parser.add_argument('-s', '--sound', action='store_true', help="use sound as a feature in analysis")
+    parser.add_argument('-f', '--settings_file', type=str)
     parser.add_argument('-b', '--backup', action='store_true', help="start training on backup data")
     parser.add_argument('-t', '--time_allign', action='store_true', help="collect data at times which are multiples of the granularity")
     args = parser.parse_args(argv[1:])
@@ -67,13 +67,24 @@ def main(argv):
     host = args.hostname
     zserver = zway.Server(host)
 
-    # Read settings from settings file
-    try:
-        settings_dict = settings.load(args.settings_file)
-    except Exception as error:
-        print "Error reading settings file.", error
-        print " "
-        exit(1)
+    # Use default settings or read settings from settings file
+    if (args.settings_file == None):
+        settings_dict = {
+            "granularity": 10,
+            "training_window": 120,
+            "training_interval": 60,
+            "ema_alpha": 1.0,
+            "severity_omega": 1.0,
+            "severity_lambda": 3.719,
+            "auto_regression": 0.0
+        }
+    else:
+        try:
+            settings_dict = settings.load(args.settings_file)
+        except Exception as error:
+            print "Error reading settings file.", error
+            print " "
+            exit(1)
         
     feature_list = zserver.device_IDs()
 
@@ -91,7 +102,6 @@ def main(argv):
     print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
     print "alpha: %.3f" % ema_alpha
 
-    
     algo = Algo(num_features, training_window, training_interval)
     algo.set_severity(severity_omega, severity_lambda)
     algo.set_EWMA(ema_alpha)

@@ -72,15 +72,11 @@ class Server(object):
         self.cookie = None
 
         # Check connection to the host
-        num_attempts = 5
-        for attempt in xrange(num_attempts):
-            try:
-                self._make_request("Data")
-            except Exception:
-                if (attempt == num_attempts-1):
-                    raise Exception("connection could not be established")
-            else:
-                break
+        print "Checking connection..."
+        try:
+            self._make_request("Data")
+        except Exception:
+            raise Exception("connection could not be established")
 
         # Obtain device dictionary
         if (device_dict == {}):
@@ -203,13 +199,16 @@ class Server(object):
         This can be used as a back door for making any Zway request
         not currently supported. Handles disconnection errors and other issues.
         """
-        try:
-            if (self.cookie == None):
-                page = requests.get(self.base_url + command, timeout=self.timeout)
+        num_attempts = 5
+        for attempt in xrange(num_attempts):
+            try:
+                if (self.cookie == None):
+                    page = requests.get(self.base_url + command, timeout=self.timeout)
+                else:
+                    page = requests.get(self.base_url + command, timeout=self.timeout, cookie=self.cookie)
+            except requests.exceptions.ConnectionError:
+                if (attempt == num_attempts-1):
+                    raise Exception("server did not respond, connection is lost")
             else:
-                page = requests.get(self.base_url + command, timeout=self.timeout, cookie=self.cookie)
-        except requests.exceptions.ConnectionError:
-            raise Exception("server did not respond, connection is lost")
-        else:
-            return page
+                return page
 

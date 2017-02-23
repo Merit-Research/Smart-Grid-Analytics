@@ -1,7 +1,7 @@
 {
-"granularity": 1,
-"training_window": 24,
-"training_interval": 1,
+"granularity": 10,
+"training_window": 120,
+"training_interval": 60,
 "ema_alpha": 1.0,
 "severity_omega": 1.0,
 "severity_lambda": 3.719,
