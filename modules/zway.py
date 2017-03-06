@@ -10,9 +10,9 @@ This python library is effectively a wrapper for the existing
 JSON library published by ZWay. It requires that the server
 software is already installed and running on the host machine.
 
-It also requires knowledge of the devices on the network. 
+It also requires knowledge of the devices on the network.
 Hopefully this restriction will be lifted once I figure out
-a way to parse this information from the devices page. 
+a way to parse this information from the devices page.
 
 - Adrian Padin, 1/20/2017
 
@@ -27,8 +27,10 @@ ZWave API for device information and saves it for later use.
 
 
 #==================== LIBRARIES ====================#
+import os
 import json
 import requests
+
 #==================== CLASSES ====================#
 
 class Server(object):
@@ -38,37 +40,25 @@ class Server(object):
         Initialize connection to the network and obtain
         a list of available devices.
         """
-        self.timeout = 2.0
+        self.timeout = 5.0
         self.base_url = "http://{}:{}/ZWaveAPI/".format(host, port)
-        self.cookie = {}
 
-        # Log in to new Z-Way server.
+        # Create sesion cookie if needed
         self.generate_session(host, port, username, password)
-        print ""
-        #cookie_file = open('cookie.txt')
-        #sessID = ""
-        #for line in cookie_file:
-        #    if 'ZWAYSession' in line:
-        #        sessID = line.split()[6]
-        #self.cookie = {'ZWAYSession':sessID}
 
         # Check connection to the host
-        num_attempts = 5
-        for attempt in xrange(num_attempts):
-            try:
-                self._make_request("Data")
-            except Exception:
-                if (attempt == num_attempts-1):
-                    raise Exception("connection could not be established")
-            else:
-                break
-            
+        print "Checking connection..."
+        try:
+            self._make_request("Data")
+        except Exception:
+            raise Exception("connection could not be established")
+
         # Obtain device dictionary
         if (device_dict == {}):
             self.update_devices()
         else:
             self.devices = device_dict
-            
+
     def set_timeout(self, timeout):
         """Set the timeout period in seconds."""
         self.timeout = float(timeout)
@@ -78,20 +68,16 @@ class Server(object):
         Fetch device information from the server and generate device dictionary.
         Used on startup, as well as when adding or removing devices.
         """
-        
         self.devices = {}
-        
-        #print requests.get(self.base_url+"Run/devices", cookies=self.cookie).text
-        devices_page = requests.get(self.base_url + "Run/devices", cookies=self.cookie).json()
-
+        acceptedClasses = ['48', '49', '50']
+        devices_page = self._make_request("Run/devices").json()
         for device_id_base in devices_page:
-            
             device_count = 0
             instances = devices_page[device_id_base]['instances']
             for instance_num in instances:
                 commandClasses = instances[instance_num]['commandClasses']
                 for commandClass in commandClasses:
-                    if (commandClass == '48' or commandClass == '49' or commandClass == '50'):
+                    if (commandClass in acceptedClasses):
                         for data_num in commandClasses[commandClass]['data']:
                             if (data_num.isdigit()):
                                 data_dict = {}
@@ -101,84 +87,80 @@ class Server(object):
                                 if (commandClass == '48'):
                                     data_dict['url_suffix'] = 'level.value'
                                     data_dict['type'] = 'bool'
-                                else: 
+                                else:
                                     data_dict['url_suffix'] = 'val.value'
                                     data_dict['type'] = 'double'
-                                    
-                                device_id = "{}.{}".format(int(device_id_base), device_count)
-                                device_id = float(device_id)
+
+                                device_id = "{}.{}".format(device_id_base, device_count)
                                 self.devices[device_id] = {}
                                 self.devices[device_id]['data'] = data_dict
                                 device_count += 1
-                                
-                                device_type = self.device_type(device_id)
-                                if "Accel" in device_type:
-                                    continue
+
+                                device_type = self.device_type(device_id).strip()
                                 device_type = device_type.replace(' ', '_')
-                                #print device_type
                                 name = device_id_base + '_' + device_type
                                 self.devices[device_id]['name'] = name
 
         return self.devices
-    
+
     def device_IDs(self):
         """Return a sorted list of available device IDs"""
-        return sorted(self.devices.keys())
+        return sorted(self.devices.keys(), key=float)
 
     def software_version(self):
         """Get the version of ZWay software running on this server"""
         command = self.base_url + "Data"
-        Data_dict = requests.get(self.base_url + command, cookies=self.cookie).json()
+        Data_dict = self._make_request(command).json()
         return Data_dict['controller']['data']['softwareRevisionVersion']
-        
+
     def battery_level(self, device_id):
         instance = self.devices[str(device_id)]['data']['instance_num']
         command = "Run/devices[{}].instances[0].Battery.data.last.value".format(device_id, instance)
-        battery_percent = requests.get(self.base_url + command, cookies=self.cookie).content
+        battery_percent = self._make_request(command).content
         return int(battery_percent)
-        
+
     def get_data(self, device_id):
         """Fetch the data from this sensor given device ID and device information"""
-        #device_id = str(device_id)
+        device_id = str(device_id)
         instance_num  = self.devices[device_id]['data']['instance_num']
         command_class = self.devices[device_id]['data']['command_class']
         data_num      = self.devices[device_id]['data']['data_num']
         data_type     = self.devices[device_id]['data']['type']
         suffix        = self.devices[device_id]['data']['url_suffix']
         device        = int(float(device_id))
-        
+
         # Update the device
         command = "Run/devices[{}].instances[{}].commandClasses[{}].Get(sensorType=-1)"
         command = command.format(device, instance_num, command_class)
-        requests.get(self.base_url + command, cookies=self.cookie).content
+        self._make_request(command)
 
         # Retrieve data
         command = "Run/devices[{}].instances[{}].commandClasses[{}].data[{}].{}"
         command = command.format(device, instance_num, command_class, data_num, suffix)
-        data = requests.get(self.base_url + command, cookies=self.cookie).content
-        
+        data = self._make_request(command).content
+
         if (data_type == 'bool'):
             data = 1 if (data == 'true') else 0
-        
+
         return float(data)
-        
+
     def device_type(self, device_id):
         """Return string representing the type of data from this device."""
-        #device_id     = str(device_id)
+        device_id = str(device_id)
         device        = int(float(device_id))
         instance_num  = self.devices[device_id]['data']['instance_num']
         command_class = self.devices[device_id]['data']['command_class']
         data_num      = self.devices[device_id]['data']['data_num']
-        
+
         # Issue the command
         command = "Run/devices[{}].instances[{}].commandClasses[{}].data[{}].sensorTypeString.value"
         command = command.format(device, instance_num, command_class, data_num)
-        return requests.get(self.base_url + command, cookies=self.cookie).content
-        
+        return self._make_request(command).content
+
     def device_name(self, device_id):
         """Return string representing the name of this device."""
         return self.devices[device_id]['name']
-        
+
     def save_devices_to_file(self, fh):
         """Prints device dictionary to a file-like object in json format."""
         json.dump(self.devices, fh)
@@ -188,17 +170,26 @@ class Server(object):
         Returns the content of the page given by the command appended
         to the end of the base URL.
         The base URL is of the form: "http://YOUR.IP.GOES.HERE:PORT/ZWaveAPI/"
-    
+
         This can be used as a back door for making any Zway request
         not currently supported. Handles disconnection errors and other issues.
         """
-        try:
-            page = requests.get(self.base_url + command, timeout=self.timeout, cookies=self.cookie)            
-        except requests.exceptions.ConnectionError:
-            raise Exception("server did not respond, connection is lost")
+        num_attempts = 5
+        for attempt in xrange(num_attempts):
+            try:
+                if (self.cookie == None):
+                    page = requests.get(self.base_url + command, timeout=self.timeout)
+                else:
+                    page = requests.get(self.base_url + command, timeout=self.timeout, cookie=self.cookie)
+            except requests.exceptions.ConnectionError:
+                if (attempt == num_attempts-1):
+                    raise Exception("server did not respond, connection is lost")
+            else:
+                return page
 
     def generate_session(self, host, port, username, password):
         if username is "" and password is "":
+            self.cookie = None
             return
         loginpage =  "http://{}:{}/ZAutomation/api/v1/login".format(host, port)
         headers = {
