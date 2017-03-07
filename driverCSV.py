@@ -9,15 +9,17 @@
 
 import sys
 import time
-import datetime as dt
-import numpy as np
 import csv
 import argparse
+import datetime as dt
+import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 
 from modules.common import *
 from modules.algo import Algo
+from modules.preprocessing import scale_features, add_auto_regression, filter_low_variance
 from modules.stats import f1_scores, error_scores
 import modules.settings as settings
 
@@ -54,25 +56,14 @@ def main(argv):
 
     infile = args.infile
     outfile = args.outfile
-    
     print ("Starting analysis on %s..." % infile)
     print ("Results will be recorded in %s..." % outfile)
     
-    # Collect data from CSV file
-    data_array = np.loadtxt(infile, delimiter=',', skiprows=1)
-    
-    # Add attacks to the data (power is last row)
-    # TODO: All the copying may not be necessary
-    #ground_truth = add_attacks(data_array[:, -1], 5, 60, 3000)
-        
-    # Output lists
-    results = [['timestamp', 'target', 'prediction', 'anomaly']]
-
     # Use default settings or read settings from settings file
     if (args.settings_file == None):
         settings_dict = {
-            "granularity": 10,
-            "training_window": 120,
+            "granularity": 60,
+            "training_window": 1440,
             "training_interval": 60,
             "ema_alpha": 1.0,
             "severity_omega": 1.0,
@@ -87,23 +78,57 @@ def main(argv):
             print " "
             exit(1)
 
-    # Initialize Algo class
     training_window = int(settings_dict['training_window'])
     training_interval = int(settings_dict['training_interval'])
     ema_alpha = float(settings_dict['ema_alpha'])
     severity_omega = float(settings_dict['severity_omega'])
     severity_lambda = float(settings_dict['severity_lambda'])
     auto_regression = int(settings_dict['auto_regression'])
-    
-    num_features = data_array.shape[1] - 2
-    print "Num features: ", num_features
-    print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
-    print "alpha: %.3f" % ema_alpha
+        
+    # Collect data from CSV file
+    df = pd.read_csv(infile)
+    df = df.set_index(df.columns[0])
+    timestamps = df.index.values
+    targets = df[df.columns[-1]]
+    features = df[df.columns[:-1]]
 
+    # Pre-processing
+    features, removed = filter_low_variance(features)
+    print "\nRemoving features due to low variance:"
+    for f in removed:
+        print f
+        
+    num_features = len(features.columns) + auto_regression
+    print "\nThe following {} features will be used:".format(num_features)
+    for f in features.columns:
+        print f
+    if auto_regression > 0:
+        print "Auto-regression: {}\n".format(auto_regression)
+        
+    X = np.matrix(features.values)
+    y = np.matrix(targets.values).T
+    X = scale_features(X)
+    X = add_auto_regression(X, y, auto_regression)
+    X = np.concatenate((X, y), 1)
+    
+    print "SHAPE OF X: {}".format(X.shape)
+    
+    # Initialize Algo class
     algo = Algo(num_features, training_window, training_interval)
     algo.set_severity(severity_omega, severity_lambda)
     algo.set_EWMA(ema_alpha)
     
+    # Add attacks to the data (power is last row)
+    # TODO: All the copying may not be necessary
+    #ground_truth = add_attacks(data_array[:, -1], 5, 60, 3000)
+        
+    # Output lists
+    results = [['timestamp', 'target', 'prediction', 'anomaly']]
+
+    print "Num features: ", num_features
+    print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
+    print "alpha: %.3f" % ema_alpha
+
     # Used for F1 calculation
     detected = set()
 
@@ -111,15 +136,16 @@ def main(argv):
     print "Beginning analysis..."
     count = 0
     start_time = time.time()
-    for row in data_array:
+    for count in range(len(timestamps)):
 
         # Get the next row of data
-        cur_time = int(row[0])
+        cur_time = timestamps[count]
+
         if (count % 120 == 0):
             print "Trying time %s" % \
                 dt.datetime.fromtimestamp(cur_time).strftime(DATE_FORMAT)
 
-        new_data = np.asarray(row[1:], np.float)
+        new_data = np.ravel(X[count, :])
         new_data = np.around(new_data, decimals=2)
         target, prediction, anomaly = algo.run(new_data) # Magic!
         
@@ -142,7 +168,11 @@ def main(argv):
     
     #f1_scores(detected, ground_truth) # Comment out if F1 Score not desired
     PMSE_smoothed, PMSE, Re_MSE, SMSE = error_scores(targets[1:], predictions[1:]) #Remove headers
-    print PMSE_smoothed, PMSE, Re_MSE, SMSE
+    
+    print "---------------------------------------------------------------------------"
+    print "%20s |%20s |%15s |%10s "  % ("RMSE-score (smoothed)", "RMSE-score (raw)", "Relative MSE", "SMSE")
+    print "%20.3f  |%20.3f |%15.3f |%10.3f " % (PMSE_smoothed, PMSE, Re_MSE, SMSE)
+    print "---------------------------------------------------------------------------"
     print "Runtime: %.4f" % (time.time() - start_time)
     print "Ending analysis. See %s for results." % outfile
     

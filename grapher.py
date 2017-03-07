@@ -50,7 +50,6 @@ class ResultsGraph(FigureCanvas):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
-        # Let graph expand with window
         self.setSizePolicy(QtGui.QSizePolicy.Expanding,
                            QtGui.QSizePolicy.Expanding)
 
@@ -131,73 +130,49 @@ class ResultsGraph(FigureCanvas):
         self.fig.tight_layout()
         self.draw()
 
-        
 class FeatureGraph(FigureCanvas):
 
     """Figure class used for graphing"""
 
     def __init__(self, parent=None, width=5, height=4, dpi=80):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
-        super(PowerGraph, self).__init__(self.fig)
+        FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
-        self.graph = self.fig.add_subplot(111)
-        self.clear()
-
         self.setSizePolicy(QtGui.QSizePolicy.Expanding,
                            QtGui.QSizePolicy.Expanding)
+
+        self.graph = self.fig.add_subplot(111)
+        self.graph.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d %H:%M:%S"))
+        self.graph.xaxis.set_major_locator(LinearLocator(numticks=6))
+        plt.setp(self.graph.get_xticklabels(), rotation=10)
 
         zero = dt.datetime.fromtimestamp(0)
         one = dt.datetime.fromtimestamp(1)
         x, y = [zero, one], [-1, -1]
-        self.predict_line, = self.graph_power.plot(x, y, color='0.8')
-
-        FigureCanvas.updateGeometry(self)
+        self.data_line, = self.graph.plot(x, y)
         self.fig.tight_layout()
         self.draw()
 
-    # Update the graph using the given data
-    # 'times' should be datetime objects
-    # 'power' should be in Watts
-    def graph_data(self, times, power):
-        power = [i/1000.0 for i in power]
-        xmin = min(times)
-        xmax = max(times)
-        ymin = 0
-        ymax = max(power) * 1.1
-
-        #self.graph.plot(times, power, 'r')
-        self.power_line.set_data(times, power)
+    def graph_data(self, datetimes, values):
+        """Graph the given feature data."""
+        xmin, xmax = datetimes[0], datetimes[-1]
+        ymin, ymax = min(values) * 1.1, max(values) * 1.1
+        self.data_line.set_data(times, values)
         self.graph.set_xlim(xmin, xmax)
         self.graph.set_ylim(ymin, ymax)
-
         self.fig.tight_layout()
         self.draw()
-        
-    # Add a horizontal color span to the graph
-    # 'start' should be a datetime (preferably in range)
-    # 'duration' should be the width of the span
-    # 'color' should be a string describing an acceptable color value
-    def color_span(self, start, duration, color):
-        end = start + dt.timedelta(minutes=duration)
-        self.graph.axvspan(xmin=start, xmax=end, color=color, alpha=0.2)
-        self.draw()
 
-    # Clear current graph, including line and 
     def clear(self):
+        """Clear the existing line"""
         self.graph.cla()
         zero = dt.datetime.fromtimestamp(0)
         one = dt.datetime.fromtimestamp(1)
         x, y = [zero, one], [-1, -1]
-        self.graph.set_xlim(zero, one)
-        self.graph.set_ylim(0, 1)
-        self.power_line, = self.graph.plot(x, y, color='red')
-        self.graph.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d %H:%M:%S"))
-        self.graph.xaxis.set_major_locator(LinearLocator(numticks=6))
-        plt.setp(self.graph.get_xticklabels(), rotation=10)
-        self.graph.set_ylabel("Power (kW)")
+        self.graph_data(x, y)
+        FigureCanvas.updateGeometry(self)
         self.fig.tight_layout()
         self.draw()
-        
         
 class ResultsWindow(QtGui.QMainWindow):
 
@@ -226,17 +201,25 @@ class ResultsWindow(QtGui.QMainWindow):
         self.tabs.addTab(self.results_tab, QtCore.QString("Results"))
         
         # Create immediate children and add to layout
-        self.graph_widget = self.init_results_graph()
-        self.settings_widget = self.init_results_settings()
+        graph_widget = self.init_results_graph()
+        self.results_settings = self.init_results_settings()
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(self.settings_widget)
-        layout.addWidget(self.graph_widget)
+        layout.addWidget(self.results_settings)
+        layout.addWidget(graph_widget)
         self.results_tab.setLayout(layout)
 
     def init_data_tab(self):
         """Create the widgets in the Data tab"""
         self.data_tab = QtGui.QWidget()
         self.tabs.addTab(self.data_tab, QtCore.QString("Data"))
+
+        # Create immediate children and add to layout
+        graph_widget = self.init_data_graph()
+        self.data_settings = self.init_data_settings()
+        layout = QtGui.QHBoxLayout()
+        layout.addWidget(self.data_settings)
+        layout.addWidget(graph_widget)
+        self.results_tab.setLayout(layout)
         
     #==================== INTIALIZE WIDGETS ====================#
     
@@ -299,6 +282,15 @@ class ResultsWindow(QtGui.QMainWindow):
         main_widget.setLayout(layout)
         return main_widget
         
+    def init_data_graph(self):
+        main_widget = QtGui.QWidget()
+        layout = QtGui.QVBoxLayout()
+        self.data_canvas = FeatureGraph(main_widget, width=5, height=4, dpi=80)
+        toolbar = NavigationToolbar(self.data_canvas, main_widget)
+        layout.addWidget(self.data_canvas)
+        layout.addWidget(toolbar)
+        main_widget.setLayout(layout)
+        return main_widget
         
     #==================== HELPER FUNCTIONS ====================#
 
@@ -366,7 +358,7 @@ class ResultsWindow(QtGui.QMainWindow):
             
     def show_anomalies(self):
         """Draw colored bars to show regions where anomalies happened"""
-        self.settings_widget.setDisabled(True)
+        self.results_settings.setDisabled(True)
         loading_win = LoadingWindow()
         self.canvas.clear_spans() #Clear any existing spans
         start = self.datetimes[0]
@@ -386,7 +378,7 @@ class ResultsWindow(QtGui.QMainWindow):
                 start = self.datetimes[count]
                 QtGui.QApplication.processEvents()
         self.canvas.draw()
-        self.settings_widget.setEnabled(True)
+        self.results_settings.setEnabled(True)
         loading_win.close()
 
         
