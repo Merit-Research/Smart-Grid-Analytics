@@ -30,6 +30,11 @@ ZWave API for device information and saves it for later use.
 import os
 import json
 import requests
+import sys
+
+# Change encoding to UTF-8 - certain sensors report non-ascii characters
+reload(sys)
+sys.setdefaultencoding('UTF8')
 
 #==================== CLASSES ====================#
 
@@ -100,7 +105,7 @@ class Server(object):
                                 device_type = self.device_type(device_id).strip()
                                 device_type = device_type.replace(' ', '_')
                                 try:
-                                    name = device_id_base.encode('utf-8') + '_'.encode('utf-8') + device_type
+                                    name = device_id_base + '_' + device_type
                                 except Exception as e:
                                     print str(e)
                                     print "ignoring device attr: " + device_type
