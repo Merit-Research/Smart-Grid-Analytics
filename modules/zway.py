@@ -50,7 +50,8 @@ class Server(object):
         print "Checking connection..."
         try:
             self._make_request("Data")
-        except Exception:
+        except Exception as e:
+            print str(e)
             raise Exception("connection could not be established")
 
         # Obtain device dictionary
@@ -98,7 +99,13 @@ class Server(object):
 
                                 device_type = self.device_type(device_id).strip()
                                 device_type = device_type.replace(' ', '_')
-                                name = device_id_base + '_' + device_type
+                                try:
+                                    name = device_id_base.encode('utf-8') + '_'.encode('utf-8') + device_type
+                                except Exception as e:
+                                    print str(e)
+                                    print "ignoring device attr: " + device_type
+                                    continue
+
                                 self.devices[device_id]['name'] = name
 
         return self.devices
@@ -180,7 +187,7 @@ class Server(object):
                 if (self.cookie == None):
                     page = requests.get(self.base_url + command, timeout=self.timeout)
                 else:
-                    page = requests.get(self.base_url + command, timeout=self.timeout, cookie=self.cookie)
+                    page = requests.get(self.base_url + command, timeout=self.timeout, cookies=self.cookie)
             except requests.exceptions.ConnectionError:
                 if (attempt == num_attempts-1):
                     raise Exception("server did not respond, connection is lost")
