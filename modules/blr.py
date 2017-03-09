@@ -137,4 +137,7 @@ class Severity(object):
             self.alert_count = 0
 
         # If several alerts are raised in succession, an anomly is reported
-        return True if (self.alert_count >= self.ALERT_THRESH) else False
+        if self.alert_count >= self.ALERT_THRESH:
+            return True, zscore
+        else:
+            return False, zscore

@@ -58,6 +58,7 @@ class Algo(object):
         target = sample[-1]
         prediction = None
         anomaly = None
+        p_value = None
         self.targets.append(target) # Preserve the target value
         sample[-1] = 1              # Constant feature, aka bias
 
@@ -71,7 +72,7 @@ class Algo(object):
         if self.have_trained:
             prediction = float(np.dot(self.parameters, sample))
             prediction = np.clip(prediction, self.pred_range[0], self.pred_range[1])
-            anomaly = float(self.severity.check(target - prediction, sample))
+            anomaly, p_value = [float(i) for i in self.severity.check(target - prediction, sample)]
             #if anomaly:
             #    self.data_queue.pop()
 
@@ -85,14 +86,14 @@ class Algo(object):
             self.have_trained = True
             self.train_count = 0
 
-        return target, prediction, anomaly
+        return target, prediction, anomaly, p_value
 
     def train(self):
         """Train the prediction and anomaly detection models"""
         X = np.matrix(self.samples)
         y = np.array(self.targets).flatten()
-        w_opt, alpha, beta, S_N = blr.sklearn_train(X, y)
-        #w_opt, alpha, beta, S_N = blr.train(X, y)
+        #w_opt, alpha, beta, S_N = blr.sklearn_train(X, y)
+        w_opt, alpha, beta, S_N = blr.train(X, y)
         self.parameters = w_opt.flatten()
         
         #covariance = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)

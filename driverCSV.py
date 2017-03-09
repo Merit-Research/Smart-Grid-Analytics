@@ -25,21 +25,21 @@ import modules.settings as settings
 
 #==================== FUNCTIONS ====================#
 
-def add_attacks(data, num_attacks, duration, intensity):
-    """Inject attacks into the data, and return new data and affected indices"""
-    if len(data) < num_attacks:
+def add_attacks(y, num_attacks, duration, intensity):
+    """Inject attacks into the y, and return new y and affected indices"""
+    if len(y) < num_attacks:
         raise RuntimeError("Too few data points for number of attacks.")
 
     # Pick 'num_attacks' evenly-spaced indices to attack
-    delta = int(len(data) / (num_attacks + 1))
+    delta = int(len(y) / (num_attacks + 1))
     ground_truth = set()
     for i in xrange(num_attacks):
         start = (1 + i) * delta
         end = start + duration
-        data[start:end] += intensity
+        y[start:end] += intensity
         ground_truth.update(range(start, end))
         
-    return ground_truth
+    return y, ground_truth
     
 
 #==================== MAIN ====================#
@@ -91,7 +91,7 @@ def main(argv):
     timestamps = df.index.values
     targets = df[df.columns[-1]]
     features = df[df.columns[:-1]]
-
+    
     # Pre-processing
     features, removed = filter_low_variance(features)
     print "\nRemoving features due to low variance:"
@@ -105,32 +105,33 @@ def main(argv):
     if auto_regression > 0:
         print "Auto-regression: {}\n".format(auto_regression)
         
-    X = np.matrix(features.values)
+    # Add attacks to the data (power is last row)
+    # Used for F1 calculation
     y = np.matrix(targets.values).T
+    start = len(y) / 2
+    y[start:], ground_truth = add_attacks(y[start:], 3, 30, 500)
+    ground_truth = set([(i + start) for i in ground_truth])
+    detected = set()
+
+    X = np.matrix(features.values)
     X = scale_features(X)
     X = add_auto_regression(X, y, auto_regression)
     X = np.concatenate((X, y), 1)
     
-    print "SHAPE OF X: {}".format(X.shape)
+    print ""
     
     # Initialize Algo class
     algo = Algo(num_features, training_window, training_interval)
     algo.set_severity(severity_omega, severity_lambda)
     algo.set_EWMA(ema_alpha)
-    
-    # Add attacks to the data (power is last row)
-    # TODO: All the copying may not be necessary
-    #ground_truth = add_attacks(data_array[:, -1], 5, 60, 3000)
-        
+            
     # Output lists
-    results = [['timestamp', 'target', 'prediction', 'anomaly']]
+    results = [['timestamp', 'target', 'prediction', 'anomaly', 'p_value']]
 
     print "Num features: ", num_features
     print "w = %.3f, L = %.3f" % (severity_omega, severity_lambda)
     print "alpha: %.3f" % ema_alpha
-
-    # Used for F1 calculation
-    detected = set()
+    
 
     #==================== ANALYSIS ====================#
     print "Beginning analysis..."
@@ -147,16 +148,17 @@ def main(argv):
 
         new_data = np.ravel(X[count, :])
         new_data = np.around(new_data, decimals=2)
-        target, prediction, anomaly = algo.run(new_data) # Magic!
+        target, prediction, anomaly, p_value = algo.run(new_data) # Magic!
         
         if (prediction != None):
-            results.append([cur_time, target, float(prediction), float(anomaly)])
+            results.append([cur_time, target, prediction, anomaly, p_value])
             if anomaly:
                 detected.add(count)
 
         count += 1
 
     #==================== RESULTS ====================#
+    print "Runtime: %.4f" % (time.time() - start_time)
         
     # Save data for later graphing
     with open(outfile, 'wb') as csvfile:
@@ -164,25 +166,35 @@ def main(argv):
         writer.writerows(results)
 
     # Remove headers for analysis and graphing
-    timestamps, targets, predictions, anomalies = zip(*results)
+    timestamps, targets, predictions, anomalies, p_values = zip(*results)
+    timestamps = timestamps[1:]
+    targets = targets[1:]
+    predictions = predictions[1:]
+    anomalies = anomalies[1:]
+    p_values = p_values[1:]
     
-    #f1_scores(detected, ground_truth) # Comment out if F1 Score not desired
-    PMSE_smoothed, PMSE, Re_MSE, SMSE = error_scores(targets[1:], predictions[1:]) #Remove headers
+    precision, recall, f1_score = f1_scores(detected, ground_truth)
+    PMSE_smoothed, PMSE, Re_MSE, SMSE = error_scores(targets, predictions) #Remove headers
     
-    print "---------------------------------------------------------------------------"
-    print "%20s |%20s |%15s |%10s "  % ("RMSE-score (smoothed)", "RMSE-score (raw)", "Relative MSE", "SMSE")
-    print "%20.3f  |%20.3f |%15.3f |%10.3f " % (PMSE_smoothed, PMSE, Re_MSE, SMSE)
-    print "---------------------------------------------------------------------------"
-    print "Runtime: %.4f" % (time.time() - start_time)
+    print "{}: {:.4f}".format("RMSE-score (smoothed)", PMSE_smoothed)
+    print "{}: {:.4f}".format("RMSE-score (raw)", PMSE)
+    print "{}: {:.4f}".format("Relative MSE", Re_MSE)
+    print "{}: {:.4f}".format("SMSE", SMSE)
+    print "{}: {:.4f}".format("Precision", precision)
+    print "{}: {:.4f}".format("Recall", recall)
+    print "{}: {:.4f}".format("F1-Score", f1_score)
+    
     print "Ending analysis. See %s for results." % outfile
     
-    """
     plt.figure()
     
-    plt.subplot(311)
+    plt.subplot(211)
     plt.plot(timestamps, targets, timestamps, predictions)
+    plt.subplot(212)
+    plt.plot(timestamps, p_values)
     plt.title("Targets and Predictions")
-
+    
+    """
     plt.subplot(312)
     error = [targets[i] - predictions[i] for i in range(len(targets))]
     plt.hist(np.ravel(error), 250, facecolor='green', alpha=0.75)
@@ -192,10 +204,10 @@ def main(argv):
     plt.subplot(313)
     plt.hist(np.ravel(pvalues), 50, facecolor='green', alpha=0.75)
     plt.title("Distribution of P-Values")
+    """
     
     plt.tight_layout()
     plt.show()
-    """
     
     return results
     

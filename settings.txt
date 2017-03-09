@@ -3,7 +3,7 @@
 "training_window": 1440,
 "training_interval": 60,
 "ema_alpha": 1.0,
-"severity_omega": 1.0,
-"severity_lambda": 3.719,
-"auto_regression": 1
+"severity_omega": 0.8,
+"severity_lambda": 2.7,
+"auto_regression": 0
 }
