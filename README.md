@@ -1,6 +1,6 @@
-#Merit Smart Grid Analytics
+# Merit Smart Grid Analytics
 
-###ISGADA: Integrated Smart Grid Analytics for Detecting Anomalies
+### ISGADA: Integrated Smart Grid Analytics for Detecting Anomalies
 This repository holds the source code for the tools and
 programs used by researchers at Merit Network, Inc., in
 their development of the smart-grid anomaly detection
@@ -11,7 +11,7 @@ Fellow researchers are free to use the tools provided to test
 their own data and to check our work. We only ask that you
 follow the guidelines of our [license](LICENSE.md).
 
-##Setup
+## Setup
 These tools are intended to run on a Raspberry Pi (model 2B or newer)
 running Raspbian Jessie. For instructions on how to set up a
 Raspberry Pi from scratch, see this document (TODOD). Once the Pi has
@@ -25,14 +25,14 @@ a few Z-Wave sensors and include them in your network; instructions on
 how to do this can be found on the
 [Razberry website](http://razberry.z-wave.me/index.php?id=5).
 
-##Usage
+## Usage
 There are two main analysis tools in this repository:
 [sequentialBLR.py](sequentialBLR.py) and [driverCSV.py](driverCSV.py).
 The sequentialBLR.py program collects data from a network of sensors
 and runs real-time analysis, and driverCSV.py runs the same analysis
 on saved data in CSV format.
 
-###The Algorithm
+### The Algorithm
 The following is a brief description of the algorithm that is used in
 the analysis:
 
@@ -47,8 +47,8 @@ and the predicted usage differ by some statistically significant margin.
 The model is then retrained periodically with new data (the "training 
 period").
 
-###Running the Scripts
-####sequentialBLR.py
+### Running the Scripts
+#### sequentialBLR.py
 
 This program collects data from a network of Z-Wave sensors using the
 [Razberry software by Z-Way](http://razberry.z-wave.me/index.php?id=1).
@@ -63,7 +63,7 @@ later use.
 You can also run this command remotely from any computer on the same
 network by replacing "localhost" with the IP or hostname of the Pi.
 
-#####NOTE: In order to run the analysis, the "get_power" function in [sequentialBLR.py](sequentialBLR.py) must be implemented! There is currently no standardized way of measuring this power data, so we leave it up to the user to fill this in.
+##### NOTE: In order to run the analysis, the "get_power" function in [sequentialBLR.py](sequentialBLR.py) must be implemented! There is currently no standardized way of measuring this power data, so we leave it up to the user to fill this in.
 
 To run the full analysis, you can run the following command:
 
@@ -87,7 +87,7 @@ start making predictions. These predictions, as well as the target
 values and an anomaly alert flag (boolean) is saved to a separate CSV
 file.
 
-####driverCSV.py
+#### driverCSV.py
 Similar to sequentialBLR.py, this program runs the analysis software
 except on previously collected data. This allows the user to try
 different combinations of hyperparameters or modify the data in other
