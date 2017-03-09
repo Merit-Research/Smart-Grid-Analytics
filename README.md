@@ -27,9 +27,9 @@ how to do this can be found on the
 
 ## Usage
 There are two main analysis tools in this repository:
-[sequentialBLR.py](sequentialBLR.py) and [driverCSV.py](driverCSV.py).
+[sequentialBLR.py](sequentialBLR.py) and [runCSV.py](runCSV.py).
 The sequentialBLR.py program collects data from a network of sensors
-and runs real-time analysis, and driverCSV.py runs the same analysis
+and runs real-time analysis, and runCSV.py runs the same analysis
 on saved data in CSV format.
 
 ### The Algorithm
@@ -87,13 +87,13 @@ start making predictions. These predictions, as well as the target
 values and an anomaly alert flag (boolean) is saved to a separate CSV
 file.
 
-#### driverCSV.py
+#### runCSV.py
 Similar to sequentialBLR.py, this program runs the analysis software
 except on previously collected data. This allows the user to try
 different combinations of hyperparameters or modify the data in other
 ways. It can be run as follows:
 
-`./driverCSV.py <INFILE> <OUTFILE> -f <SETTINGS_FILE>`
+`./runCSV.py <INFILE> <OUTFILE> -f <SETTINGS_FILE>`
 
 Here, INFILE is the name of the input CSV file, and OUTFILE is the
 name of the results file that will be created. The settings are 

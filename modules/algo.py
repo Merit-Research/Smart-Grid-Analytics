@@ -92,8 +92,8 @@ class Algo(object):
         """Train the prediction and anomaly detection models"""
         X = np.matrix(self.samples)
         y = np.array(self.targets).flatten()
-        #w_opt, alpha, beta, S_N = blr.sklearn_train(X, y)
-        w_opt, alpha, beta, S_N = blr.train(X, y)
+        w_opt, alpha, beta, S_N = blr.sklearn_train(X, y)
+        #w_opt, alpha, beta, S_N = blr.train(X, y)
         self.parameters = w_opt.flatten()
         
         #covariance = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
