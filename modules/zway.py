@@ -30,29 +30,11 @@ ZWave API for device information and saves it for later use.
 import os
 import json
 import requests
+import sys
 
-
-#==================== FUNCTIONS ====================#
-
-def start_session(username, password):
-    cookie_file = 'cookie.txt' 
-    request = "curl -i -H \"Accept: application/json\" -H \"content-type: application/json\" -X POST -d '"
-    request += "{\"form\": true, \"login\": \"{}\", \"password\": \"{}\", \"keepme\": false, \"default_ui\": 1}"
-    request.format(username, password)
-    request += "' localhost:8083/ZAutomation/api/v1/login -c " + cookie_file
-
-    print request
-    os.system(request)
-    
-    print ""
-    sessID = ""
-    with open(cookie_file) as cookie_fh:
-        for line in cookie_file:
-            if 'ZWAYSession' in line:
-                sessID = line.split()[6]
-                return sessID
-    return sessID
-
+# Change encoding to UTF-8 - certain sensors report non-ascii characters
+reload(sys)
+sys.setdefaultencoding('UTF8')
 
 #==================== CLASSES ====================#
 
@@ -66,16 +48,15 @@ class Server(object):
         self.timeout = 5.0
         self.base_url = "http://{}:{}/ZWaveAPI/".format(host, port)
 
-        # Check if authorization is needed
-        # TODO: Test authorization, currently not supported
-        # self.cookie = {'ZWAYSession': start_session(username, password)}
-        self.cookie = None
+        # Create sesion cookie if needed
+        self.generate_session(host, port, username, password)
 
         # Check connection to the host
         print "Checking connection..."
         try:
             self._make_request("Data")
-        except Exception:
+        except Exception as e:
+            print str(e)
             raise Exception("connection could not be established")
 
         # Obtain device dictionary
@@ -123,7 +104,13 @@ class Server(object):
 
                                 device_type = self.device_type(device_id).strip()
                                 device_type = device_type.replace(' ', '_')
-                                name = device_id_base + '_' + device_type
+                                try:
+                                    name = device_id_base + '_' + device_type
+                                except Exception as e:
+                                    print str(e)
+                                    print "ignoring device attr: " + device_type
+                                    continue
+
                                 self.devices[device_id]['name'] = name
 
         return self.devices
@@ -205,10 +192,26 @@ class Server(object):
                 if (self.cookie == None):
                     page = requests.get(self.base_url + command, timeout=self.timeout)
                 else:
-                    page = requests.get(self.base_url + command, timeout=self.timeout, cookie=self.cookie)
+                    page = requests.get(self.base_url + command, timeout=self.timeout, cookies=self.cookie)
             except requests.exceptions.ConnectionError:
                 if (attempt == num_attempts-1):
                     raise Exception("server did not respond, connection is lost")
             else:
                 return page
 
+    def generate_session(self, host, port, username, password):
+        if username is "" and password is "":
+            self.cookie = None
+            return
+        loginpage =  "http://{}:{}/ZAutomation/api/v1/login".format(host, port)
+        headers = {
+            'Accept':'application/json',
+            'Content-Type':'application/json'
+        }
+        data = '{"form":true, "login":"'+username+'", "password":"'+password+'", "keepme":false, "default_ui":1}'
+        #print loginpage, headers, data
+        r = requests.post(loginpage, headers=headers, data=data)
+        print "Login response: ", r.text
+        print "Session cookie:"
+        print r.cookies.get_dict()
+        self.cookie=r.cookies

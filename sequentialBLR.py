@@ -56,6 +56,8 @@ def main(argv):
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('hostname', type=str, help="IP address or hostname of Z-way server host")
+    parser.add_argument('-u', '--username', type=str, help="Username for Z-way server host")
+    parser.add_argument('-p', '--password', type=str, help="Password for Z-way server host")
     parser.add_argument('-s', '--sound', action='store_true', help="use sound as a feature in analysis")
     parser.add_argument('-f', '--settings_file', type=str, help="load analysis settings from file")
     #parser.add_argument('-b', '--backup', action='store_true', help="start training on backup data")
@@ -65,8 +67,13 @@ def main(argv):
         
     # Initialize Zway server
     host = args.hostname
-    zserver = zway.Server(host)
-
+    zserver = None
+    
+    if args.username and args.password:
+        zserver = zway.Server(host, username=args.username, password=args.password)
+    else:
+        zserver = zway.Server(host)
+        
     # Use default settings or read settings from settings file
     if (args.settings_file == None):
         settings_dict = {
