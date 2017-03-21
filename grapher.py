@@ -65,7 +65,7 @@ class ResultsGraph(FigureCanvas):
         one = dt.datetime.fromtimestamp(1)
         x, y = [zero, one], [0, 0]
         self.predict_line, = self.graph_power.plot(x, y, color='k', linewidth=2)
-        self.target_line, = self.graph_power.plot(x, y, color='r', linestyle='--', linewidth=2)
+        self.target_line, = self.graph_power.plot(x, y, color='b', linestyle='--', linewidth=2)
         self.error_line, = self.graph_error.plot(x, y, color='r')
         self.color_spans = []
 
