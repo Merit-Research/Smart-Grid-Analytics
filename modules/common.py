@@ -16,4 +16,4 @@ LOG_FILE = 'sequential.log'
 
 # Logging information
 import logging
-logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG)
+logging.basicConfig(filename=LOG_FILE, level=logging.INFO)

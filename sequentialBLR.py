@@ -67,8 +67,6 @@ def main(argv):
         
     # Initialize Zway server
     host = args.hostname
-    zserver = None
-    
     if args.username and args.password:
         zserver = zway.Server(host, username=args.username, password=args.password)
     else:
@@ -77,7 +75,7 @@ def main(argv):
     # Use default settings or read settings from settings file
     if (args.settings_file == None):
         settings_dict = {
-            "granularity": 10,
+            "granularity": 60,
             "training_window": 120,
             "training_interval": 60,
             "ema_alpha": 1.0,
@@ -121,7 +119,6 @@ def main(argv):
     
     # Timing procedure
     granularity = settings_dict['granularity']
-    granularity = 10
     goal_time = int(time.time())
     if args.time_allign:
         goal_time += granularity - (int(time.time()) % granularity)

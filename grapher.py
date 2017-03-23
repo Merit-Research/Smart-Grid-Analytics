@@ -29,7 +29,7 @@ Example:
 import os
 import sys
 import csv
-import time
+import time 
 import datetime as dt
 import numpy as np
 
