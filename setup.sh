@@ -6,7 +6,7 @@
 # Install necessary programs for using the Merit ISGADA code
 
 echo "Installing Z-Way software"
-wget -q -O - razberry.z-wave.me/install/v2.3.0  | bash
+#wget -q -O - razberry.z-wave.me/install/v2.3.0  | bash
 
 echo "Installing python dependencies"
 apt-get update
