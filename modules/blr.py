@@ -75,7 +75,6 @@ def train(X, y):
     return (w_opt, alpha, beta, S_N)
     
     
-
 # See p.152 of Bishop's "Pattern Recognition and Machine Learning"
 def sklearn_train(X, y):
     model = BayesianRidge().fit(X, y)

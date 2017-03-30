@@ -39,19 +39,26 @@ from modules.algo import Algo
 #==================== FUNCTIONS ====================#
 
 def get_features(zserver, sound=False):
+    """Convenience function for getting a list of the features on the zserver"""
     features = []
     for key in zserver.device_IDs():
         features.append(zserver.get_data(key))
     return features
     
+
 def get_power():
+    """
+    Return the current power values
+    WARNING: THIS MUST BE UPDATED IN ORDER TO RUN A REAL ANALYSIS!!!
+    """
     return np.random.normal()
     
+
 #==================== MAIN ====================#
 def main(argv):
     
     #===== Initialization =====#
-    prefix = 'isgada'
+    prefix = 'cherry'
     
     # Parse arguments
     parser = argparse.ArgumentParser()
@@ -142,7 +149,7 @@ def main(argv):
         if (args.collect_only): continue
             
         features = np.array(features).flatten()
-        target, pred, anomaly = algo.run(features)
+        target, pred, anomaly, zscore = algo.run(features)
         if (anomaly != None):
             results_log.log([target, pred, float(anomaly)])
             print target, pred, anomaly

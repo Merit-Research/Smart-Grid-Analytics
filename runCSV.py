@@ -186,14 +186,17 @@ def main(argv):
     
     print "Ending analysis. See %s for results." % outfile
     
-    plt.figure()
-    
+    """
+    plt.figure()    
     plt.subplot(211)
     plt.plot(timestamps, targets, timestamps, predictions)
     plt.subplot(212)
     plt.plot(timestamps, zscores)
     plt.title("Targets and Predictions")
-    
+    plt.tight_layout()
+    plt.show()    
+    """
+
     """
     plt.subplot(312)
     error = [targets[i] - predictions[i] for i in range(len(targets))]
@@ -204,10 +207,9 @@ def main(argv):
     plt.subplot(313)
     plt.hist(np.ravel(pvalues), 50, facecolor='green', alpha=0.75)
     plt.title("Distribution of P-Values")
-    """
-    
     plt.tight_layout()
     plt.show()
+    """
     
     return results
     

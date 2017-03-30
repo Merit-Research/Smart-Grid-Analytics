@@ -48,16 +48,16 @@ class Server(object):
         self.timeout = 5.0
         self.base_url = "http://{}:{}/ZWaveAPI/".format(host, port)
 
-        # Create sesion cookie if needed
-        self.generate_session(host, port, username, password)
-
         # Check connection to the host
-        print "Checking connection..."
         try:
-            self._make_request("Data")
-        except Exception as e:
-            print str(e)
-            raise Exception("connection could not be established")
+            self.generate_session(host, port, username, password)
+            self._make_request("Data").json()
+        except requests.ConnectionError as e:
+            raise RuntimeError("Connection could not be established: destination host unreachable")
+        except ValueError as e:
+            raise RuntimeError("Connection could not be established: authentication required")            
+        except BaseException as e:
+            raise RuntimeError("Connection could not be established")
 
         # Obtain device dictionary
         if (device_dict == {}):
@@ -211,7 +211,7 @@ class Server(object):
         data = '{"form":true, "login":"'+username+'", "password":"'+password+'", "keepme":false, "default_ui":1}'
         #print loginpage, headers, data
         r = requests.post(loginpage, headers=headers, data=data)
-        print "Login response: ", r.text
-        print "Session cookie:"
-        print r.cookies.get_dict()
+        #print "Login response: ", r.text
+        #print "Session cookie:"
+        #print r.cookies.get_dict()
         self.cookie=r.cookies

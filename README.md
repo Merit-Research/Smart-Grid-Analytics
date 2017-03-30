@@ -1,28 +1,26 @@
 # Merit Smart Grid Analytics
-
 ### ISGADA: Integrated Smart Grid Analytics for Detecting Anomalies
-This repository holds the source code for the tools and
-programs used by researchers at Merit Network, Inc., in
-their development of the smart-grid anomaly detection
-tool known as ISGADA. For more information about the ISGADA project,
-see [this paper](isgada_paper.pdf).
+This repository holds the source code for the tools and programs used by the 
+research team at Merit Network, Inc., in their development of the smart-grid 
+anomaly detection tool known as ISGADA. For more information about the ISGADA 
+project, you can read [our paper](isgada_paper.pdf).
 
-Fellow researchers are free to use the tools provided to test
-their own data and to check our work. We only ask that you
-follow the guidelines of our [license](LICENSE.md).
+Fellow researchers are free to use the tools provided to test their own data 
+and to check our work. We only ask that you follow the guidelines of our 
+[license](LICENSE.md).
 
 ## Setup
-These tools are intended to run on a Raspberry Pi (model 2B or newer)
-running Raspbian Jessie. For instructions on how to set up a
-Raspberry Pi from scratch, see this document (TODOD). Once the Pi has
-been set up, you can initialize all python dependencies and
-install the Razberry software on the Pi by running the setup.sh script:
+These tools are intended to run on a Raspberry Pi (model 2B or newer) running 
+Raspbian Jessie. For instructions on how to set up a Raspberry Pi from scratch, 
+see this document (TODO). Once the Pi has been set up, you can initialize all 
+python dependencies and install the Razberry software on the Pi by running the 
+setup.sh script:
 
 `sudo ./setup.sh`
 
-In order to collect data using Razberry, you will also need to purchase
-a few Z-Wave sensors and include them in your network; instructions on 
-how to do this can be found on the
+In order to collect data using Razberry, you will also need to purchase a few 
+Z-Wave sensors and include them in your network; instructions on how to do this 
+can be found on the
 [Razberry website](http://razberry.z-wave.me/index.php?id=5).
 
 ## Usage
@@ -63,7 +61,16 @@ later use.
 You can also run this command remotely from any computer on the same
 network by replacing "localhost" with the IP or hostname of the Pi.
 
-##### NOTE: In order to run the analysis, the "get_power" function in [sequentialBLR.py](sequentialBLR.py) must be implemented! There is currently no standardized way of measuring this power data, so we leave it up to the user to fill this in.
+If you are running version 2.0.0 or newer of the Z-Way Server software,
+you may require authentication to access the server. You can do this
+by running the following command:
+
+`sequentialBLR.py localhost -u my_username -p my_password`
+
+**NOTE: In order to run the analysis, the "get_power" function in 
+[sequentialBLR.py](sequentialBLR.py) must be implemented!** There is 
+currently no standardized way of measuring this power data, so we 
+leave it up to the user to fill this in.
 
 To run the full analysis, you can run the following command:
 
@@ -100,3 +107,23 @@ name of the results file that will be created. The settings are
 handled in the same way as sequentialBLR.py, except that the 
 granularity parameter is ignored.
 
+#### grapher.py
+Once you have collected data and run your analysis, you can visualize the 
+results using the grapher program. 
+To start it, simply run as: `./grapher.py`
+
+The grapher has a graphical interface that allows you to choose which results
+file to plot as well as change some of the characteristics:
+
+* **Start Date and End Date** - change the range of data being displayed
+* **Smooth data (minutes)** - smooth out noisy data to help reveal overall trend
+* **Show anomalies (minutes)** - show regions where alerts were raised by the algorithm
+* **Update Graph** - apply changes and update the plot
+
+You can use the toolbar to navigate, and clicking the Save button (floppy disk
+icon) will allow you to save your plot as an image file.
+
+## Contributing
+This repository is currently maintained by the research team at Merit Network, Inc. 
+If you would like to contribute to the project, please submit a pull request
+and we will review your additions accordingly.

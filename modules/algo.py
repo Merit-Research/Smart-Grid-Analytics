@@ -16,6 +16,9 @@ import sys
 import numpy as np
 from collections import deque
 
+from sklearn.svm import SVR
+from sklearn.linear_model import BayesianRidge
+
 import blr
 from stats import ewma
 
@@ -37,6 +40,8 @@ class Algo(object):
         self.samples = deque(maxlen=training_window)
         self.targets = deque(maxlen=training_window)
         
+        #self.model = SVR(kernel='rbf', C=1000)
+        self.model = BayesianRidge()
         self.severity = blr.Severity()
         self.alpha = 1.0
         self.parameters = 0     # Training parameters
@@ -70,7 +75,8 @@ class Algo(object):
 
         # Make a prediction (if we have already trained once)
         if self.have_trained:
-            prediction = float(np.dot(self.parameters, sample))
+            #prediction = float(np.dot(self.parameters, sample))
+            prediction = float(self.model.predict(sample.reshape(1, -1)))
             prediction = np.clip(prediction, self.pred_range[0], self.pred_range[1])
             anomaly, p_value = [float(i) for i in self.severity.check(target - prediction, sample)]
             #if anomaly:
@@ -94,7 +100,8 @@ class Algo(object):
         y = np.array(self.targets).flatten()
         w_opt, alpha, beta, S_N = blr.sklearn_train(X, y)
         #w_opt, alpha, beta, S_N = blr.train(X, y)
-        self.parameters = w_opt.flatten()
+        self.model.fit(X, y)
+        #self.parameters = w_opt.flatten()
         
         #covariance = np.linalg.pinv(alpha*np.eye(M) + beta*PhiT_Phi)
         self.severity.update_params(beta, S_N)
