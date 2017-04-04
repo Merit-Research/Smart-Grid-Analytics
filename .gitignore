@@ -3,6 +3,7 @@
 *.pyc
 *.log
 *.txt
+*.gz
 
 # Keywords
 *test*
