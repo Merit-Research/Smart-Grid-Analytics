@@ -22,6 +22,7 @@ import argparse
 import gzip
 import shutil
 import tarfile
+from Queue import Empty as QueueEmpty
 from multiprocessing import Process, Queue
 
 import zway
@@ -113,9 +114,8 @@ class Datalog(object):
         while True:
             try:
                 sample = self.queue.get(timeout=5)
-            except Queue.Empty:
+            except QueueEmpty:
                 pass
-                print "empty"
             else:
                 timestamp = sample[0]
                 date = dt.date.fromtimestamp(timestamp)

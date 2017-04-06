@@ -143,17 +143,17 @@ def main(argv):
         features = get_features(zserver)
         power = get_power()
         features.append(power)
-        data_log.log(features, goal_time)
+        data_log.log(features[:], goal_time)
 
         # Do not run analysis if only collecting data
         if (args.collect_only): continue
             
         features = np.array(features).flatten()
         target, pred, anomaly, zscore = algo.run(features)
+
         if (anomaly != None):
             results_log.log([target, pred, float(anomaly)])
             print target, pred, anomaly
-            print "theta", algo.w_opt
         else:
             print target, pred
 
