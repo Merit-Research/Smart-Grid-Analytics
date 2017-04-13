@@ -1,4 +1,5 @@
 {
+"prefix": "ne_data",
 "granularity": 60,
 "training_window": 1440,
 "training_interval": 60,
