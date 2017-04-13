@@ -58,7 +58,6 @@ def get_power():
 def main(argv):
     
     #===== Initialization =====#
-    prefix = 'cherry'
     
     # Parse arguments
     parser = argparse.ArgumentParser()
@@ -82,6 +81,7 @@ def main(argv):
     # Use default settings or read settings from settings file
     if (args.settings_file == None):
         settings_dict = {
+            "prefix": "ne_data",
             "granularity": 60,
             "training_window": 120,
             "training_interval": 60,
@@ -99,6 +99,7 @@ def main(argv):
             exit(1)
 
     # Initialize Algo class
+    prefix = settings_dict['prefix']
     granularity = int(settings_dict['granularity'])
     training_window = int(settings_dict['training_window'])
     training_interval = int(settings_dict['training_interval'])
