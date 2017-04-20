@@ -86,6 +86,7 @@ class Datalog(object):
             folder (month)
                 filename (day)
         """
+
         self.prefix = prefix
         self.folder = ""
         self.fname = ""
@@ -150,5 +151,3 @@ class Datalog(object):
     def read_range(self, start, end):
         raise RuntimeError("Not yet implemented")
 
-
-

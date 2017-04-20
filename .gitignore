@@ -4,6 +4,7 @@
 *.log
 *.txt
 *.gz
+*.sh
 
 # Keywords
 *test*
@@ -12,5 +13,6 @@
 # Specific files
 isgada_paper.pdf
 plot.py
+!setup.sh
 
 # Specific folders
