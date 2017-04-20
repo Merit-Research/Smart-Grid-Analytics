@@ -86,6 +86,7 @@ class Datalog(object):
             folder (month)
                 filename (day)
         """
+
         self.prefix = prefix
         self.folder = ""
         self.fname = ""
@@ -185,4 +186,4 @@ if __name__ == '__main__':
     main(sys.argv)
 
 
-
+

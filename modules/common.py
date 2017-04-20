@@ -14,7 +14,7 @@ the various programs in this repository.
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 ICON_FILE = 'app/merit_icon.png'
-LOG_FILE = 'sequential.log'
+LOG_FILE = '/var/log/sequential.log'
 
 # Logging information
 import logging
