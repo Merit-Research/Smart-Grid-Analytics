@@ -95,8 +95,9 @@ class Datalog(object):
         output = io.BytesIO()
         csv.writer(output).writerow(header)
         self.header = output.getvalue()
-
-        # Initialize the file-writing process
+        
+    def run(self):
+        """Initialize the file-writing process."""
         self.queue = Queue()
         Process(target=self.file_process).start()
 
@@ -148,41 +149,6 @@ class Datalog(object):
 
     def read_range(self, start, end):
         raise RuntimeError("Not yet implemented")
-
-
-def main(argv):
-    """Connect to server and start the logging process."""
-
-    # Parse arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('host', type=str)
-    parser.add_argument('port', type=str)
-    parser.add_argument('prefix', type=str)
-    parser.add_argument('-a', '--auth', nargs=2, type=str, default=(None, None))
-    args = parser.parse_args(argv[1:])
-
-    try:
-        username, password = args.auth
-    except Exception:
-        server = zway.Server(args.host, args.port)
-    else:
-        server = zway.Server(args.host, args.port, username=username, password=password)
-
-    device_list = server.device_IDs()
-    log = Datalog(args.prefix, device_list)
-
-    # Timing procedure
-    granularity = 10
-    goal_time = int(time.time())
-    while(True):
-        while goal_time > time.time():
-            time.sleep(0.2)
-        goal_time = goal_time + granularity
-        print "sample at time", dt.datetime.fromtimestamp(goal_time)
-        log.log(get_all_data(server), goal_time)
-
-if __name__ == '__main__':
-    main(sys.argv)
 
 
 

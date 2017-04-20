@@ -47,8 +47,7 @@ def get_features(zserver, sound=False):
     
 
 def get_power():
-    """
-    Return the current power values
+    """Return the current power values
     WARNING: THIS MUST BE UPDATED IN ORDER TO RUN A REAL ANALYSIS!!!
     """
     return np.random.normal()
@@ -122,8 +121,10 @@ def main(argv):
     # Two Datalogs: one for data and one for results
     feature_names.append('total_power')
     data_log = Datalog(prefix, feature_names)
+    data_log.run()
     results_header = ['target', 'prediction', 'anomaly']
     results_log = Datalog(prefix + '_results', results_header)
+    results_log.run()
     
     # Timing procedure
     granularity = settings_dict['granularity']
