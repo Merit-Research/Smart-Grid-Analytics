@@ -114,8 +114,7 @@ class DatalogChild(object):
 
     def get_filename(self, date):
         fname = "{}_{}.csv".format(self.prefix, date)
-        folder = self.get_month_folder(date)
-        return folder + '/' + fname
+        return '/'.join([self.folder, fname])
         
     def get_month_folder(self, date):
         month_folder = "{}-{:0>2}".format(date.year, date.month)
