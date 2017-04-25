@@ -97,7 +97,7 @@ class DatalogChild(object):
             self.fname = self.get_filename(date)
             self.start_new_file(self.fname)
             
-        if date != self.date:
+        elif date != self.date:
             # Compress old file or files
             self.compress(self.fname)
             if date.month != self.date.month:
