@@ -120,8 +120,9 @@ def main(argv):
     
     # Two Datalogs: one for data and one for results
     feature_names.append('total_power')
-    data_log = Datalog(prefix, feature_names)
+    data_log = Datalog(folder, prefix, feature_names)
     data_log.run()
+    
     results_header = ['target', 'prediction', 'anomaly']
     results_log = Datalog(prefix + '_results', results_header)
     results_log.run()
