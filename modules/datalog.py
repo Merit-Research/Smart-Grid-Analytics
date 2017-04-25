@@ -99,7 +99,7 @@ class DatalogChild(object):
             
         elif date != self.date:
             # Compress old file or files
-            self.compress(self.fname)
+            self.compress(self.date)
             if date.month != self.date.month:
                 self.archive(self.get_month_folder(self.date))
             
@@ -131,11 +131,11 @@ class DatalogChild(object):
             with open(fname, 'wb') as fh:
                 fh.write(self.header)
 
-    def compress(self, fname):
+    def compress(self, date):
         """Compress the given file to a copy with the same name plus the .gz extension."""
-        if fname == '': return
         # Create necessary subfolders
-        gzname = fname + '.gz'
+        fname = get_filename(date)
+        gzname = '/'.join([self.get_month_folder(date), (fname + '.gz'))
         try:
             os.makedirs(os.path.dirname(gzname))
         except OSError:
