@@ -135,7 +135,7 @@ class DatalogChild(object):
         """Compress the given file to a copy with the same name plus the .gz extension."""
         # Create necessary subfolders
         fname = get_filename(date)
-        gzname = '/'.join([self.get_month_folder(date), (fname + '.gz'))
+        gzname = '/'.join([self.get_month_folder(date), (fname + '.gz')])
         try:
             os.makedirs(os.path.dirname(gzname))
         except OSError:
