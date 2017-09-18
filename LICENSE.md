@@ -1,3 +1,5 @@
-License to be announced
+This software is licensed under GNU General Public License v3 (GPL-3):
 
--Adrian Padin, 1/17/2017
+https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)#fulltext
+
+
