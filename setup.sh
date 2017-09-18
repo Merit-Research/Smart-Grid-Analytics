@@ -18,6 +18,7 @@ pip install numpy
 pip install scipy
 pip install sklearn
 pip install matplotlib
+pip install requests
 apt-get install python-qt4
 
 while :
