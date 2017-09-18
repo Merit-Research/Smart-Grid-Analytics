@@ -57,7 +57,7 @@ def get_power():
 def main(argv):
     
     #===== Initialization =====#
-    
+    folder = "./" 
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('hostname', type=str, help="IP address or hostname of Z-way server host")
@@ -120,12 +120,11 @@ def main(argv):
     
     # Two Datalogs: one for data and one for results
     feature_names.append('total_power')
+    print(feature_names)
     data_log = Datalog(folder, prefix, feature_names)
-    data_log.run()
     
     results_header = ['target', 'prediction', 'anomaly']
-    results_log = Datalog(prefix + '_results', results_header)
-    results_log.run()
+    results_log = Datalog(folder, prefix + '_results', results_header)
     
     # Timing procedure
     granularity = settings_dict['granularity']

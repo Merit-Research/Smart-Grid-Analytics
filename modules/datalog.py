@@ -76,7 +76,7 @@ class DatalogChild(object):
         self.header = output.getvalue()
         
     def run(self, queue):
-        """Continually listen for incoming data."""        
+        """Continually listen for incoming data."""
         while True:
             try:
                 sample = queue.get(timeout=5)
