@@ -186,7 +186,7 @@ class Server(object):
         This can be used as a back door for making any Zway request
         not currently supported. Handles disconnection errors and other issues.
         """
-        num_attempts = 5
+        num_attempts = 10
         for attempt in xrange(num_attempts):
             try:
                 if (self.cookie == None):
@@ -196,6 +196,10 @@ class Server(object):
             except requests.exceptions.ConnectionError:
                 if (attempt == num_attempts-1):
                     raise Exception("server did not respond, connection is lost")
+            except requests.exceptions.Timeout:
+                print("Timed out {}".format(attempt))
+                if (attempt == num_attempts-1):
+                    raise Exception("server Timeout")
             else:
                 return page
 
