@@ -66,7 +66,7 @@ class DatalogChild(object):
         # Make sure the folder does not end with '/'
         self.folder = folder.rstrip('/')
         self.prefix = prefix
-        self.date = None
+        self.date = dt.date.fromtimestamp(1505710800) 
         self.fname = ""
         
         # Generate the header
@@ -89,15 +89,17 @@ class DatalogChild(object):
         """Add data to log files."""
         timestamp = sample[0]
         date = dt.date.fromtimestamp(timestamp)
-        
+        print("self:{} date:{}".format(self.date,date)) 
         # Check if new file is needed
-        if self.date == None: 
+        if self.date == None:
+            print("NONE") 
             # Start new day, new file
             self.date = date
             self.fname = self.get_filename(date)
             self.start_new_file(self.fname)
             
         elif date != self.date:
+            print("Compress")
             # Compress old file or files
             self.compress(self.date)
             if date.month != self.date.month:
@@ -112,6 +114,10 @@ class DatalogChild(object):
         with open(self.fname, 'ab') as fh:
             csv.writer(fh).writerow(sample)
 
+    def get_file_name(self, date):
+        fname = "{}_{}.csv".format(self.prefix, date)
+        return '/'.join([fname])
+    
     def get_filename(self, date):
         fname = "{}_{}.csv".format(self.prefix, date)
         return '/'.join([self.folder, fname])
@@ -134,8 +140,9 @@ class DatalogChild(object):
     def compress(self, date):
         """Compress the given file to a copy with the same name plus the .gz extension."""
         # Create necessary subfolders
-        fname = get_filename(date)
-        gzname = '/'.join([self.get_month_folder(date), (fname + '.gz')])
+        fgzname = self.get_file_name(date) 
+        gzname = '/'.join([self.get_month_folder(date), (fgzname + '.gz')])
+        fname = self.get_filename(date)
         try:
             os.makedirs(os.path.dirname(gzname))
         except OSError:

@@ -57,7 +57,7 @@ def get_power():
 def main(argv):
     
     #===== Initialization =====#
-    folder = "./" 
+    folder = "/ne_data/" 
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('hostname', type=str, help="IP address or hostname of Z-way server host")
